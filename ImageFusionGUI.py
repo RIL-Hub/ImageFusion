@@ -8,6 +8,9 @@ import glob
 import pydicom as dicom
 from scipy.ndimage import zoom
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from RangeSlider.RangeSlider import RangeSliderV
+# TODO implement rangeslider for intensity sliders
+# https://stackoverflow.com/questions/12058408/tkinter-scale-with-two-sliders
 
 class App(tk.Tk):
     
@@ -24,14 +27,17 @@ class App(tk.Tk):
         # PET Images (stored as 3D .tifs)
         PET_path = 'nasir_recon-20240606T222236Z-003/'
         PET_image_path = data_path + PET_path + 'USCS_Orgain_Soil_4Cap_150uC_fud_12uCi_1hour_11_53am.E15.V0.5I50RAW.tif'
-        file_properties = {"vxl_dim1_size": 0.5, "vxl_dim2_size": 0.5, "vxl_dim3_size": 0.5}
-        self.X_PET = ImageData(PET_image_path, file_properties, image_type='PET')
+        file_properties = {"path": PET_image_path, "vxl_dim1_size": 0.5, "vxl_dim2_size": 0.5, "vxl_dim3_size": 0.5}
+        self.X_PET = ImageData(file_properties, image_type='PET')
         
         # CT Images (stored as series of .IMA files)
         CT_dir_path = '2024-05-23_EARTH_SHOT_CAP_TUBES_BENNETT-20240606T205140Z-001/'
         CT_images_path = data_path + CT_dir_path + 'DYNACT_HEAD_NAT_FILL_HU_NORMAL_180UM_VOXEL_109KV/'
+        file_properties = {"path": CT_images_path}
+        self.X_CT = ImageData(file_properties, image_type='CT')
+        
         file_properties = {}
-        self.X_CT = ImageData(CT_images_path, file_properties, image_type='CT')
+        self.X_dual = ImageData(file_properties, image_type='dual')
         
         self.match_image_dims()
         self.X_PET.print_info()
@@ -66,7 +72,7 @@ class App(tk.Tk):
         # panel controls
         self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views, self.X_CT)
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views, self.X_PET)
-        self.panel_3_controls = ImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_CT)
+        self.panel_3_controls = ImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_dual)
 
         # run
         self.mainloop()
@@ -319,8 +325,7 @@ class DualImageView:
         self.canvas.draw()
 
 class ImageData:
-    def __init__(self, file_path, file_properties, image_type):
-        self.file_path = file_path
+    def __init__(self, file_properties, image_type):
         self.file_properties = file_properties
         self.image_type = image_type
         
@@ -345,7 +350,7 @@ class ImageData:
         print('')
 
     def init_PET_image(self):
-        self.original_X = np.flip(imread(self.file_path), axis=0)
+        self.original_X = np.flip(imread(self.file_properties['path']), axis=0)
         
         vxl_dim1 = self.file_properties['vxl_dim1_size']
         vxl_dim2 = self.file_properties['vxl_dim2_size']
@@ -363,7 +368,7 @@ class ImageData:
         plots = []
         file_names = []
         vxls_in_dim3 = 0
-        for idx, file_name in enumerate(glob.glob(self.file_path + '*.IMA')):
+        for idx, file_name in enumerate(glob.glob(self.file_properties['path'] + '*.IMA')):
             ds = dicom.dcmread(file_name)
             pix = ds.pixel_array
             plots.append(pix)
@@ -382,6 +387,12 @@ class ImageData:
         self.original_X = np.dstack(plots)
         self.set_dims()
     
+    def init_dual_image(self):
+        self.vxl_dims = [1, 1, 1]
+        self.vxls_in_dim = [100, 100, 100]
+        self.original_X = np.zeros([100,100,100])
+        self.set_dims()
+    
     def set_slice(self, slice_number, view):
         slice_number = int(slice_number)
         if view == 0: self.slice = self.X[slice_number, :, :]
@@ -390,10 +401,6 @@ class ImageData:
     
     def get_slice_max(self):
         return np.amax(self.slice)
-    
-    def set_slice_by_measure(self, slice_distance, view):
-        slice_number = int(np.floor(np.divide(slice_distance, self.vxl_dims[view])))
-        self.set_slice(slice_number, view)
         
     def pad_to_dims(self, target_dims):
         for i, (X_dim, T_dim) in enumerate(zip(self.dims, target_dims)):
@@ -415,7 +422,7 @@ class ImageData:
     
     def set_dims(self):
         self.dims = np.multiply(self.vxl_dims, self.vxls_in_dim)
-             
+               
 class ImageControls:
     def __init__(self, parent_frame, app, panel_views, image):
         self.app = app
@@ -482,10 +489,11 @@ class ImageControls:
         slider_frame.pack(side='left')
         
         slider_initial = 99
+        upper_bound = self.image.vxls_in_dim[view]-1
         slider = tk.Scale(slider_frame, variable=self.views_slice_index[view],
                           command=slider_command,
                           showvalue=False,
-                          from_=0, to=self.image.vxls_in_dim[view]-1,
+                          from_=0, to=upper_bound,
                           width=10, length=200, orient='vertical')
         slider_showvalue = tk.Label(slider_frame, textvariable=self.views_slice_index[view])
         slider_label = tk.Label(slider_frame, text=name, width=3)
@@ -502,7 +510,7 @@ class ImageControls:
         self.panel_views[view].set_slice(slice_number)
     
     def slice_percent_to_slice_number(self, view, slice_percent):
-        return int(np.floor(slice_percent * (self.image.vxls_in_dim[view])-1))
+        return np.max([0, int(np.floor(slice_percent * (self.image.vxls_in_dim[view])-1))])
     
     def set_self_view_slice_percent(self, view, slice_percent):
         slice_number = self.slice_percent_to_slice_number(view, slice_percent)
