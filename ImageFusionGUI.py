@@ -46,27 +46,27 @@ class App(tk.Tk):
         self.panel_3 = ScannerPanel(self)
         
         # image views
-        self.image_1_view_1 = ImageView(self.panel_1.image_view_1, self.X_PET, view=0)
-        self.image_1_view_2 = ImageView(self.panel_1.image_view_2, self.X_PET, view=1)
-        self.image_1_view_3 = ImageView(self.panel_1.image_view_3, self.X_PET, view=2)
+        self.image_1_view_1 = ImageView(self.panel_1.image_view_1, self.X_CT, view=0)
+        self.image_1_view_2 = ImageView(self.panel_1.image_view_2, self.X_CT, view=1)
+        self.image_1_view_3 = ImageView(self.panel_1.image_view_3, self.X_CT, view=2)
         self.image_1_views = [self.image_1_view_1, self.image_1_view_2, self.image_1_view_3]
         
-        self.image_2_view_1 = ImageView(self.panel_2.image_view_1, self.X_CT, view=0)
-        self.image_2_view_2 = ImageView(self.panel_2.image_view_2, self.X_CT, view=1)
-        self.image_2_view_3 = ImageView(self.panel_2.image_view_3, self.X_CT, view=2)
+        self.image_2_view_1 = ImageView(self.panel_2.image_view_1, self.X_PET, view=0)
+        self.image_2_view_2 = ImageView(self.panel_2.image_view_2, self.X_PET, view=1)
+        self.image_2_view_3 = ImageView(self.panel_2.image_view_3, self.X_PET, view=2)
         self.image_2_views = [self.image_2_view_1, self.image_2_view_2, self.image_2_view_3]
         
-        self.image_3_view_1 = ImageView(self.panel_3.image_view_1, self.X_PET, view=0)
-        self.image_3_view_2 = ImageView(self.panel_3.image_view_2, self.X_PET, view=1)
-        self.image_3_view_3 = ImageView(self.panel_3.image_view_3, self.X_PET, view=2)
+        self.image_3_view_1 = DualImageView(self.panel_3.image_view_1, self.image_1_view_1, self.image_2_view_1)
+        self.image_3_view_2 = DualImageView(self.panel_3.image_view_2, self.image_1_view_2, self.image_2_view_2)
+        self.image_3_view_3 = DualImageView(self.panel_3.image_view_3, self.image_1_view_3, self.image_2_view_3)
         self.image_3_views = [self.image_3_view_1, self.image_3_view_2, self.image_3_view_3]
         
         self.images_views = [self.image_1_views, self.image_2_views, self.image_3_views]
         
         # panel controls
-        self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views, self.X_PET)
-        self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views, self.X_CT)
-        self.panel_3_controls = ImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_PET)
+        self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views, self.X_CT)
+        self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views, self.X_PET)
+        self.panel_3_controls = ImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_CT)
 
         # run
         self.mainloop()
@@ -261,11 +261,7 @@ class ImageView:
         self.fig.set_figwidth(3)
         self.ax = self.fig.add_subplot()
         
-        self.X_max = X.max_intensity
         self.view = view
-        self.threshold = 1
-        self.thresh_min = 0
-        self.thresh_max = self.X_max
         self.X = X
         self.X.set_slice(100, view)
         
@@ -285,8 +281,39 @@ class ImageView:
     
     def update_data(self):
         self.image.set_data(self.X.slice)
-        # self.image.set_clim(vmin=0, vmax=self.X.get_slice_max())
         self.cbar.update_normal(self.image)
+        
+        # self.canvas.flush_events()
+        self.canvas.draw()
+
+class DualImageView:
+    def __init__(self, parent, image_1_view, image_2_view):
+        self.opacity = 0.5
+        
+        self.fig = plt.Figure()
+        self.fig.set_figheight(3)
+        self.fig.set_figwidth(3)
+        self.ax = self.fig.add_subplot()
+        
+        # self.view = view
+        self.image_1_view = image_1_view
+        self.image_2_view = image_2_view
+        
+        self.image_1 = self.ax.imshow(self.image_1_view.X.slice, cmap='gist_gray', interpolation='none')
+        self.image_2 = self.ax.imshow(self.image_2_view.X.slice, cmap='magma', alpha=self.opacity, interpolation='none', extent=self.image_1.get_extent())
+        
+        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
+        self.canvas.get_tk_widget().pack(padx=2.5, pady=2.5, expand=1, fill='both')
+
+    def set_slice(self, slice_number):
+        # rely on base image views being set
+        self.update_data()
+    
+    def update_data(self):
+        self.image_1.set_data(self.image_1_view.X.slice)
+        self.image_2.set_data(self.image_2_view.X.slice)
+        # self.cbar.update_normal(self.image_1)
+        # self.cbar.update_normal(self.image_2)
         
         # self.canvas.flush_events()
         self.canvas.draw()
@@ -354,9 +381,6 @@ class ImageData:
         self.vxls_in_dim = [vxls_in_dim1, vxls_in_dim2, vxls_in_dim3]
         self.original_X = np.dstack(plots)
         self.set_dims()
-        
-    def init_Dual_image(self):
-        ...
     
     def set_slice(self, slice_number, view):
         slice_number = int(slice_number)
@@ -452,37 +476,33 @@ class ImageControls:
     
     def make_slider(self, parent_frame, view, name):
         def slider_command(slider_value):
-            slider_value = int(slider_value)
-            slider_showvalue.config(text=(slider_value+1))
-            self.set_view_slice(view, slider_value)
-            
+            self.set_view_slice(view, int(slider_value))
+        
         slider_frame = tk.Frame(parent_frame)
         slider_frame.pack(side='left')
         
+        slider_initial = 99
         slider = tk.Scale(slider_frame, variable=self.views_slice_index[view],
                           command=slider_command,
                           showvalue=False,
                           from_=0, to=self.image.vxls_in_dim[view]-1,
                           width=10, length=200, orient='vertical')
-        slider_showvalue = tk.Label(slider_frame, text=slider.get())
+        slider_showvalue = tk.Label(slider_frame, textvariable=self.views_slice_index[view])
         slider_label = tk.Label(slider_frame, text=name, width=3)
         
         slider_showvalue.pack(side='top')
         slider.pack(side='top')
         slider_label.pack(side='top')
         
-        slider.set(99)
-        
+        slider.set(slider_initial)
         return slider
     
     def set_self_view_slice(self, view, slice_number):
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_number)
-        # TODO: update slide label based on position
-        # TODO: fix index out of bound error for maxing out CT image sliders
     
     def slice_percent_to_slice_number(self, view, slice_percent):
-        return int(np.round(slice_percent * self.image.vxls_in_dim[view]))
+        return int(np.floor(slice_percent * (self.image.vxls_in_dim[view])-1))
     
     def set_self_view_slice_percent(self, view, slice_percent):
         slice_number = self.slice_percent_to_slice_number(view, slice_percent)
@@ -490,7 +510,7 @@ class ImageControls:
     
     def set_view_slice(self, view, slice_number):
         if self.linked_images.get() == 1:
-            slice_percent_of_dim = slice_number / self.image.vxls_in_dim[view]
+            slice_percent_of_dim = slice_number / (self.image.vxls_in_dim[view]-1)
             self.app.panel_1_controls.set_self_view_slice_percent(view, slice_percent_of_dim)
             self.app.panel_2_controls.set_self_view_slice_percent(view, slice_percent_of_dim)
             self.app.panel_3_controls.set_self_view_slice_percent(view, slice_percent_of_dim)
