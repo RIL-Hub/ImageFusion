@@ -9,8 +9,6 @@ import pydicom as dicom
 from scipy.ndimage import zoom
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from RangeSlider.RangeSlider import RangeSliderV
-# TODO implement rangeslider for intensity sliders
-# https://stackoverflow.com/questions/12058408/tkinter-scale-with-two-sliders
 
 class App(tk.Tk):
     
@@ -269,9 +267,10 @@ class ImageView:
         
         self.view = view
         self.X = X
-        self.X.set_slice(100, view)
+        self.slice = self.X.get_slice(100, view)
+        self.intensity_limits = [0.0, self.X.max_intensity]
         
-        self.image = self.ax.imshow(self.X.slice, vmin=0, vmax=self.X.get_slice_max(), cmap='gist_yarg', interpolation='none')
+        self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap='gist_yarg', interpolation='none')
         
         # Color Bar
         divider_PET = make_axes_locatable(self.ax)
@@ -282,11 +281,16 @@ class ImageView:
         self.canvas.get_tk_widget().pack(padx=2.5, pady=2.5, expand=1, fill='both')
     
     def set_slice(self, slice_number):
-        self.X.set_slice(slice_number, self.view)
+        self.slice = self.X.get_slice(slice_number, self.view)
+        self.update_data()
+        
+    def set_intensity(self, intensity_limits):
+        self.intensity_limits = [intensity_limits[0]*self.X.max_intensity, intensity_limits[1]*self.X.max_intensity]
         self.update_data()
     
     def update_data(self):
-        self.image.set_data(self.X.slice)
+        self.image.set_data(np.clip(self.slice, self.intensity_limits[0], self.intensity_limits[1]))
+        self.image.set_clim(vmin=self.intensity_limits[0], vmax=self.intensity_limits[1])
         self.cbar.update_normal(self.image)
         
         # self.canvas.flush_events()
@@ -305,8 +309,8 @@ class DualImageView:
         self.image_1_view = image_1_view
         self.image_2_view = image_2_view
         
-        self.image_1 = self.ax.imshow(self.image_1_view.X.slice, cmap='gist_gray', interpolation='none')
-        self.image_2 = self.ax.imshow(self.image_2_view.X.slice, cmap='magma', alpha=self.opacity, interpolation='none', extent=self.image_1.get_extent())
+        self.image_1 = self.ax.imshow(self.image_1_view.slice, cmap='gist_gray', interpolation='none')
+        self.image_2 = self.ax.imshow(self.image_2_view.slice, cmap='magma', alpha=self.opacity, interpolation='none', extent=self.image_1.get_extent())
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.get_tk_widget().pack(padx=2.5, pady=2.5, expand=1, fill='both')
@@ -316,8 +320,8 @@ class DualImageView:
         self.update_data()
     
     def update_data(self):
-        self.image_1.set_data(self.image_1_view.X.slice)
-        self.image_2.set_data(self.image_2_view.X.slice)
+        self.image_1.set_data(self.image_1_view.slice)
+        self.image_2.set_data(self.image_2_view.slice)
         # self.cbar.update_normal(self.image_1)
         # self.cbar.update_normal(self.image_2)
         
@@ -338,7 +342,6 @@ class ImageData:
         
         self.X = self.original_X.copy()
         self.max_intensity = np.amax(self.X)
-        self.set_slice(0, 0)
         
         self.print_info()
        
@@ -393,15 +396,12 @@ class ImageData:
         self.original_X = np.zeros([100,100,100])
         self.set_dims()
     
-    def set_slice(self, slice_number, view):
+    def get_slice(self, slice_number, view):
         slice_number = int(slice_number)
-        if view == 0: self.slice = self.X[slice_number, :, :]
-        if view == 1: self.slice = self.X[:, slice_number, :]
-        if view == 2: self.slice = self.X[:, :, slice_number]
+        if view == 0: return self.X[slice_number, :, :]
+        if view == 1: return self.X[:, slice_number, :]
+        if view == 2: return self.X[:, :, slice_number]
     
-    def get_slice_max(self):
-        return np.amax(self.slice)
-        
     def pad_to_dims(self, target_dims):
         for i, (X_dim, T_dim) in enumerate(zip(self.dims, target_dims)):
             if X_dim < T_dim:
@@ -422,7 +422,7 @@ class ImageData:
     
     def set_dims(self):
         self.dims = np.multiply(self.vxl_dims, self.vxls_in_dim)
-               
+                      
 class ImageControls:
     def __init__(self, parent_frame, app, panel_views, image):
         self.app = app
@@ -442,12 +442,31 @@ class ImageControls:
         self.slider_view_1 = self.make_slider(slice_sliders, view=0, name='V1')
         self.slider_view_2 = self.make_slider(slice_sliders, view=1, name='V2')
         self.slider_view_3 = self.make_slider(slice_sliders, view=2, name='V3')
-        # self.slider_time   = self.make_slider(slice_sliders, variable=self.time_index, command=self.set_time_slice, name='T', bounds=[0, 10])
         slice_sliders.pack(side='top')
         
-        # intensity_controls = tk.Frame(self.tab_view, bd=1, relief=tk.SUNKEN)
-        # intensity_controls.pack(side='left', padx=5, pady=2)
-        # self.intensity_slider = self.make_slider(intensity_controls, 0, self.set_intensity, 'I', bounds=[0, 100])
+        intensity_controls = tk.Frame(self.tab_view, bd=1, relief=tk.SUNKEN)
+        intensity_controls.pack(anchor='n', side='left', padx=5, pady=2)
+        
+        self.intensity_limits = [tk.DoubleVar(value=0.0), tk.DoubleVar(value=1.0)]
+        self.last_intensity_limits = [0, 1]
+        slider_handle = tk.PhotoImage(file='slider_10px.png')
+        intensity_range_slider = RangeSliderV(intensity_controls, self.intensity_limits,
+                                              show_value=False,auto=False,
+                                              imageU=slider_handle, image_anchorU='s',
+                                              imageL=slider_handle, image_anchorL='n',
+                                              padY=3, Height=206, Width=50, line_width=10,
+                                              min_val=0, max_val=1, step_size=0.05,
+                                              line_s_color='red', line_color='white',
+                                              bgColor='#f0f0f0')
+        intensity_range_slider.forceValues([0, 1])
+        self.intensity_limits[0].trace_add('write', self.set_intensity)
+        self.intensity_limits[1].trace_add('write', self.set_intensity)
+
+        self.intensity_UB_label = tk.Label(intensity_controls, text='1.00')
+        self.intensity_LB_label = tk.Label(intensity_controls, text='0.00')
+        self.intensity_UB_label.pack(side='top')
+        intensity_range_slider.pack(side='top')
+        self.intensity_LB_label.pack(side='top')
         
         self.make_linked_images(slice_controls)
         
@@ -524,14 +543,19 @@ class ImageControls:
             self.app.panel_3_controls.set_self_view_slice_percent(view, slice_percent_of_dim)
         else:
             self.set_self_view_slice(view, slice_number)
-        
-        slice_percent_of_dim = slice_number / self.image.vxls_in_dim[view]
-
-    def set_time_slice(self, slice_number):
-        ...
     
-    def set_intensity(self, intensity):
-        ...
+    def set_intensity(self, ar_name, index, mode):
+        if (self.last_intensity_limits[0] != self.intensity_limits[0].get() or
+            self.last_intensity_limits[1] != self.intensity_limits[1].get()):
+            
+            self.intensity_UB_label['text'] = '{0:.2f}'.format(self.intensity_limits[1].get())
+            self.intensity_LB_label['text'] = '{0:.2f}'.format(self.intensity_limits[0].get())
+            
+            for panel_view in self.panel_views:
+                panel_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
+                
+            self.last_intensity_limits[0] = self.intensity_limits[0].get()
+            self.last_intensity_limits[1] = self.intensity_limits[1].get()
 
 def main() -> int:
     App("ImageFusion3D")
