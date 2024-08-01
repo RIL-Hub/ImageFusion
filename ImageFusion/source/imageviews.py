@@ -68,7 +68,7 @@ class DualImageView:
         self.update_data()
         
     def set_intensity(self, intensity_limits):
-        # TODO
+        # TODO: make second slider for each image?
         ...
     
     def update_data(self):
