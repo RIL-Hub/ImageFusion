@@ -37,6 +37,10 @@ class ImageView:
         self.intensity_limits = [intensity_limits[0]*self.X.max_intensity, intensity_limits[1]*self.X.max_intensity]
         self.update_data()
     
+    def set_cmap(self, cmap):
+        self.image.set_cmap(cmap)
+        self.update_data()
+    
     def update_data(self):
         self.image.set_data(np.clip(self.slice, self.intensity_limits[0], self.intensity_limits[1]))
         self.image.set_clim(vmin=self.intensity_limits[0], vmax=self.intensity_limits[1])

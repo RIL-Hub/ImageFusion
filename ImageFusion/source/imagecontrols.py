@@ -2,6 +2,7 @@ import numpy as np
 import tkinter as tk
 from tkinter import ttk
 from RangeSlider.RangeSlider import RangeSliderV
+from matplotlib.pyplot import colormaps
 
 
 class ImageControls:
@@ -9,7 +10,7 @@ class ImageControls:
         self.app = app
         self.panel_views = panel_views
         self.image = image
-        self.views_slice_index = [tk.IntVar(), tk.IntVar(), tk.IntVar()]
+        
         
         # view controls
         self.tab_view = ttk.Frame(parent_frame)
@@ -19,6 +20,7 @@ class ImageControls:
         slice_controls.pack(anchor='n', side='left', padx=5, pady=2)
         slice_sliders = tk.Frame(slice_controls)
         slice_sliders.pack(side='top')
+        self.views_slice_index = [tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.slider_view_1 = self.make_slider(slice_sliders, view=0, name='V1')
         self.slider_view_2 = self.make_slider(slice_sliders, view=1, name='V2')
         self.slider_view_3 = self.make_slider(slice_sliders, view=2, name='V3')
@@ -26,7 +28,24 @@ class ImageControls:
         
         intensity_controls = tk.Frame(self.tab_view, bd=1, relief=tk.SUNKEN)
         intensity_controls.pack(anchor='n', side='left', padx=5, pady=2)
+        self.intensity_limits = [tk.DoubleVar(value=0.0), tk.DoubleVar(value=1.0)]
+        self.last_intensity_limits = [0, 1]
         self.intensity_slider = self.make_rangeslider(intensity_controls)
+        
+        options = [
+            "gist_yarg",
+            "gist_gray",
+            "inferno",
+            "viridis",
+            "hot",
+            "jet"
+        ]
+        
+        self.color_scheme = tk.StringVar()
+        self.color_scheme.set(options[0])
+        drop = tk.OptionMenu(intensity_controls , self.color_scheme , *options)
+        drop.pack(side='top')
+        self.color_scheme.trace_add('write', self.set_colormap)
         
         # other controls
         self.tab_transform = ttk.Frame(parent_frame)
@@ -87,8 +106,6 @@ class ImageControls:
         return slider
     
     def make_rangeslider(self, parent):
-        self.intensity_limits = [tk.DoubleVar(value=0.0), tk.DoubleVar(value=1.0)]
-        self.last_intensity_limits = [0, 1]
         slider_handle = tk.PhotoImage(file='images/slider_handle_10px.png')
         intensity_range_slider = RangeSliderV(parent, self.intensity_limits,
                                               show_value=False,auto=False,
@@ -138,3 +155,7 @@ class ImageControls:
                 
             self.last_intensity_limits[0] = self.intensity_limits[0].get()
             self.last_intensity_limits[1] = self.intensity_limits[1].get()
+        
+    def set_colormap(self, ar_name, index, mode):
+        for panel_view in self.panel_views:
+            panel_view.set_cmap(self.color_scheme.get())
