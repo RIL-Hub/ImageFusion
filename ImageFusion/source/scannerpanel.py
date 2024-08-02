@@ -125,9 +125,9 @@ class ScannerPanel(DragDropMixIn, tk.Frame):
         self.image_view_1 = tk.Frame(self.image_views, bg='blue')
         self.image_view_2 = tk.Frame(self.image_views, bg='blue')
         self.image_view_3 = tk.Frame(self.image_views, bg='blue')
-        self.image_view_1.pack(padx=2.5, pady=2.5, side='left', expand=True, fill='both')
-        self.image_view_2.pack(padx=2.5, pady=2.5, side='left', expand=True, fill='both')
-        self.image_view_3.pack(padx=2.5, pady=2.5, side='left', expand=True, fill='both')
+        self.image_view_1.pack(padx=0, pady=0, side='left', expand=True, fill='both')
+        self.image_view_2.pack(padx=0, pady=0, side='left', expand=True, fill='both')
+        self.image_view_3.pack(padx=0, pady=0, side='left', expand=True, fill='both')
         
         # set colors
         self.set_neutral_colors()

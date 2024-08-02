@@ -3,8 +3,10 @@ import tkinter as tk
 
 # custom modules
 from source.imagecontrols import ImageControls
+from source.dualimagecontrols import DualImageControls
 from source.scannerpanel import ScannerPanel
-from source.imageviews import ImageData, ImageView, DualImageView
+from source.imageviews import ImageData, ImageView
+from source.dualimageviews import DualImageData, DualImageView
 
 class App(tk.Tk):
     
@@ -31,7 +33,8 @@ class App(tk.Tk):
         self.X_CT = ImageData(file_properties, image_type='CT')
         
         file_properties = {}
-        self.X_dual = ImageData(file_properties, image_type='dual')
+        #TODO: refactor dual image class to handle 2 images rather than files...
+        self.X_dual = DualImageData(file_properties, image_type='dual')
         
         self.match_image_dims()
         self.X_PET.print_info()
@@ -64,9 +67,9 @@ class App(tk.Tk):
         self.images_views = [self.image_1_views, self.image_2_views, self.image_3_views]
         
         # panel controls
-        self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views, self.X_CT)
-        self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views, self.X_PET)
-        self.panel_3_controls = ImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_dual)
+        self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views)
+        self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
+        self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_dual)
 
         # run
         self.mainloop()
@@ -121,7 +124,7 @@ class MenuBar(tk.Menu):
         pass
 
 def main() -> int:
-    App("ImageFusion3D")
+    App("ImageFusion4D")
     return 0
 
 if __name__ == "__main__":

@@ -6,51 +6,42 @@ import glob
 import pydicom as dicom
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
-class ImageView:
-    def __init__(self, parent, X, view):
+class DualImageView:
+    def __init__(self, parent, image_1_view, image_2_view):
+        self.opacity = 0.5
+        
         self.fig = plt.Figure()
         self.fig.set_figheight(3)
         self.fig.set_figwidth(3)
         self.ax = self.fig.add_subplot()
         
-        self.view = view
-        self.X = X
-        self.slice = self.X.get_slice(view, 99, 'by_number')
-        self.intensity_limits = [0.0, self.X.max_intensity]
+        self.image_1_view = image_1_view
+        self.image_2_view = image_2_view
         
-        self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap='gist_yarg', interpolation='none')
-        
-        # Color Bar
-        divider_PET = make_axes_locatable(self.ax)
-        cb_cax = divider_PET.append_axes("right", size="5%", pad=0.05)
-        self.cbar = self.fig.colorbar(self.image, cax=cb_cax)
+        self.image_1 = self.ax.imshow(self.image_1_view.slice, cmap='gist_gray', interpolation='none')
+        self.image_2 = self.ax.imshow(self.image_2_view.slice, cmap='magma', alpha=self.opacity, interpolation='none', extent=self.image_1.get_extent())
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.get_tk_widget().pack(padx=0, pady=0, expand=1, fill='both')
-    
+
     def set_slice(self, slice_indicator, mode):
-        self.slice = self.X.get_slice(self.view, slice_indicator, mode)
+        # rely on base image views being set
         self.update_data()
         
     def set_intensity(self, intensity_limits):
-        self.intensity_limits = [intensity_limits[0]*self.X.max_intensity, intensity_limits[1]*self.X.max_intensity]
-        self.update_data()
-    
-    def set_cmap(self, cmap):
-        self.image.set_cmap(cmap)
-        self.update_data()
+        # TODO: make second slider for each image?
+        ...
     
     def update_data(self):
-        self.image.set_data(np.clip(self.slice, self.intensity_limits[0], self.intensity_limits[1]))
-        self.image.set_clim(vmin=self.intensity_limits[0], vmax=self.intensity_limits[1])
-        self.cbar.update_normal(self.image)
+        self.image_1.set_data(self.image_1_view.slice)
+        self.image_2.set_data(self.image_2_view.slice)
+        # self.cbar.update_normal(self.image_1)
+        # self.cbar.update_normal(self.image_2)
         
         # self.canvas.flush_events()
         self.canvas.draw()
 
-
-class ImageData:
+class DualImageData:
     def __init__(self, file_properties, image_type):
         self.file_properties = file_properties
         self.image_type = image_type
