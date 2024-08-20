@@ -34,7 +34,7 @@ class App(tk.Tk):
         
         file_properties = {}
         #TODO: refactor dual image class to handle 2 images rather than files...
-        self.X_dual = DualImageData(file_properties, image_type='dual')
+        self.X_dual = DualImageData(self.X_CT, self.X_PET)
         
         self.match_image_dims()
         self.X_PET.print_info()
@@ -59,9 +59,9 @@ class App(tk.Tk):
         self.image_2_view_3 = ImageView(self.panel_2.image_view_3, self.X_PET, view=2)
         self.image_2_views = [self.image_2_view_1, self.image_2_view_2, self.image_2_view_3]
         
-        self.image_3_view_1 = DualImageView(self.panel_3.image_view_1, self.image_1_view_1, self.image_2_view_1)
-        self.image_3_view_2 = DualImageView(self.panel_3.image_view_2, self.image_1_view_2, self.image_2_view_2)
-        self.image_3_view_3 = DualImageView(self.panel_3.image_view_3, self.image_1_view_3, self.image_2_view_3)
+        self.image_3_view_1 = DualImageView(self.panel_3.image_view_1, self.X_dual, view=0)
+        self.image_3_view_2 = DualImageView(self.panel_3.image_view_2, self.X_dual, view=1)
+        self.image_3_view_3 = DualImageView(self.panel_3.image_view_3, self.X_dual, view=2)
         self.image_3_views = [self.image_3_view_1, self.image_3_view_2, self.image_3_view_3]
         
         self.images_views = [self.image_1_views, self.image_2_views, self.image_3_views]
@@ -69,7 +69,7 @@ class App(tk.Tk):
         # panel controls
         self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views)
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
-        self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views, self.X_dual)
+        self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
 
         # run
         self.mainloop()

@@ -6,10 +6,9 @@ from matplotlib.pyplot import colormaps
 
 
 class DualImageControls:
-    def __init__(self, parent_frame, app, panel_views, image):
+    def __init__(self, parent_frame, app, panel_views):
         self.app = app
         self.panel_views = panel_views
-        self.image = image
         
         # view controls
         self.tab_view = ttk.Frame(parent_frame)
@@ -88,7 +87,7 @@ class DualImageControls:
         slider_frame = tk.Frame(parent_frame)
         slider_frame.pack(side='left')
         
-        upper_bound = self.image.vxls_in_dim[view]-1
+        upper_bound = self.panel_views[view].X_dual.vxls_in_dim[view]-1
         slider = tk.Scale(slider_frame, variable=self.views_slice_index[view],
                           command=slider_command,
                           showvalue=False,
@@ -131,14 +130,14 @@ class DualImageControls:
         if mode == 'by_number':
             slice_number = slice_indicator
         if mode == 'by_percent':
-            slice_number = int(np.max([0, np.floor(slice_indicator * (self.image.vxls_in_dim[view])-1)]))
+            slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X_dual.vxls_in_dim[view])-1)]))
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
       
     def set_linked_view_slice(self, view, slice_number=-1):
         if slice_number == -1:
             slice_number = self.views_slice_index[view].get()
-        slice_percent = slice_number / (self.image.vxls_in_dim[view]-1)
+        slice_percent = slice_number / (self.panel_views[view].X_dual.vxls_in_dim[view]-1)
         self.app.panel_1_controls.set_view_slice(view, slice_percent, 'by_percent')
         self.app.panel_2_controls.set_view_slice(view, slice_percent, 'by_percent')
         self.app.panel_3_controls.set_view_slice(view, slice_percent, 'by_percent')

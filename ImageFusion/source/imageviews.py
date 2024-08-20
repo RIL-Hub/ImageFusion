@@ -59,8 +59,6 @@ class ImageData:
             self.init_PET_image()
         if self.image_type == 'CT':
             self.init_CT_image()
-        if self.image_type == 'dual':
-            self.init_dual_image()
         
         self.X = self.original_X.copy()
         self.max_intensity = np.amax(self.X)
@@ -111,18 +109,6 @@ class ImageData:
         self.vxls_in_dim = [vxls_in_dim1, vxls_in_dim2, vxls_in_dim3]
         self.original_X = np.dstack(plots)
         self.set_dims()
-    
-    def init_dual_image(self):
-        self.vxl_dims = [1, 1, 1]
-        self.vxls_in_dim = [100, 100, 100]
-        self.original_X = np.zeros([100,100,100])
-        self.set_dims()
-    
-    def get_slice_by_number(self, slice_number, view):
-        slice_number = int(slice_number)
-        if view == 0: return self.X[slice_number, :, :]
-        if view == 1: return self.X[:, slice_number, :]
-        if view == 2: return self.X[:, :, slice_number]
     
     def get_slice(self, view, slice_indicator, mode):
         if mode == 'by_number':
