@@ -18,8 +18,9 @@ class ImageView:
         self.X = X
         self.slice = self.X.get_slice(view, 99, 'by_number')
         self.intensity_limits = [0.0, self.X.max_intensity]
+        self.cmap = 'gist_yarg'
         
-        self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap='gist_yarg', interpolation='none')
+        self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap=self.cmap, interpolation='none')
         
         # Color Bar
         divider_PET = make_axes_locatable(self.ax)
@@ -38,7 +39,8 @@ class ImageView:
         self.update_data()
     
     def set_cmap(self, cmap):
-        self.image.set_cmap(cmap)
+        self.cmap = cmap
+        self.image.set_cmap(self.cmap)
         self.update_data()
     
     def update_data(self):

@@ -61,7 +61,7 @@ class ImageControls:
             if self.linked_images.get() == 1:
                 self.app.panel_1_controls.linked_images.set(1)
                 self.app.panel_2_controls.linked_images.set(1)
-                self.app.panel_3_controls.linked_images.set(1)
+                # self.app.panel_3_controls.linked_images.set(1)
                 
                 self.set_linked_view_slice(view=0) 
                 self.set_linked_view_slice(view=1) 
@@ -69,7 +69,7 @@ class ImageControls:
             else:
                 self.app.panel_1_controls.linked_images.set(0)
                 self.app.panel_2_controls.linked_images.set(0)
-                self.app.panel_3_controls.linked_images.set(0)
+                # self.app.panel_3_controls.linked_images.set(0)
         
         self.linked_images = tk.IntVar(value=1)
         self.linked_images_checkbutton = tk.Checkbutton(parent, text="Link Images", onvalue=1, offvalue=0,
@@ -138,9 +138,12 @@ class ImageControls:
         if slice_number == -1:
             slice_number = self.views_slice_index[view].get()
         slice_percent = slice_number / (self.panel_views[view].X.vxls_in_dim[view]-1)
+        
         self.app.panel_1_controls.set_view_slice(view, slice_percent, 'by_percent')
         self.app.panel_2_controls.set_view_slice(view, slice_percent, 'by_percent')
-        self.app.panel_3_controls.set_view_slice(view, slice_percent, 'by_percent')
+        
+        self.update_dual_view()
+        # self.app.panel_3_controls.set_view_slice(view, slice_percent, 'by_percent')
       
     def set_intensity(self, ar_name, index, mode):
         if (self.last_intensity_limits[0] != self.intensity_limits[0].get() or
@@ -154,7 +157,15 @@ class ImageControls:
                 
             self.last_intensity_limits[0] = self.intensity_limits[0].get()
             self.last_intensity_limits[1] = self.intensity_limits[1].get()
-        
+            
+            self.update_dual_view()
+    
     def set_colormap(self, ar_name, index, mode):
         for panel_view in self.panel_views:
             panel_view.set_cmap(self.color_scheme.get())
+            
+        self.update_dual_view()
+    
+    def update_dual_view(self):
+        for panel_view in self.app.image_3_views:
+            panel_view.update_data()
