@@ -8,7 +8,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 class DualImageView:
     def __init__(self, parent, ImageView1, ImageView2):
-        self.opacity = 0.5
         
         self.ImageView1 = ImageView1
         self.ImageView2 = ImageView2
@@ -17,29 +16,31 @@ class DualImageView:
         self.fig.set_figheight(3)
         self.fig.set_figwidth(3)
         self.ax = self.fig.add_subplot()
+        self.opacity = 0.5
 
         self.slice_1 = self.ImageView1.slice
-        self.slice_2 = self.ImageView2.slice
-        
         self.image_1 = self.ax.imshow(self.slice_1, cmap=self.ImageView1.cmap, interpolation='none')
+        
+        self.slice_2 = self.ImageView2.slice
         self.image_2 = self.ax.imshow(self.slice_2, cmap=self.ImageView2.cmap, alpha=self.opacity, interpolation='none', extent=self.image_1.get_extent())
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.get_tk_widget().pack(padx=0, pady=0, expand=1, fill='both')
         
+        self.update_data()
+        
     
     def update_data(self):
         self.slice_1 = self.ImageView1.slice
-        self.slice_2 = self.ImageView2.slice
-        
-        self.image_1.set_cmap(self.ImageView1.cmap)
-        self.image_2.set_cmap(self.ImageView2.cmap)
-        
         self.image_1.set_data(self.slice_1)
-        self.image_2.set_data(self.slice_2)
-       
+        self.image_1.set_cmap(self.ImageView1.cmap)
         self.image_1.set_clim(vmin=self.ImageView1.intensity_limits[0], vmax=self.ImageView1.intensity_limits[1])
+        
+        self.slice_2 = self.ImageView2.slice
+        self.image_2.set_data(self.slice_2)
+        self.image_2.set_cmap(self.ImageView2.cmap)
         self.image_2.set_clim(vmin=self.ImageView2.intensity_limits[0], vmax=self.ImageView2.intensity_limits[1])
+        self.image_2.set_alpha(self.opacity)
         
         # self.canvas.flush_events()
         self.canvas.draw()

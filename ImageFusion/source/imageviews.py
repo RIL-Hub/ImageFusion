@@ -16,7 +16,7 @@ class ImageView:
         
         self.view = view
         self.X = X
-        self.slice = self.X.get_slice(view, 99, 'by_number')
+        self.slice = self.X.get_slice(view, 0.5, 'by_percent')
         self.intensity_limits = [0.0, self.X.max_intensity]
         self.cmap = 'gist_yarg'
         

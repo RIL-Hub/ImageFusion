@@ -9,7 +9,6 @@ from source.imageviews import ImageData, ImageView
 from source.dualimageviews import DualImageData, DualImageView
 
 # TODO:
-# opacity slider for dual view
 # multicursors
 
 class App(tk.Tk):
@@ -71,7 +70,7 @@ class App(tk.Tk):
         # panel controls
         self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views)
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
-        # self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
+        self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
 
         # run
         self.mainloop()
