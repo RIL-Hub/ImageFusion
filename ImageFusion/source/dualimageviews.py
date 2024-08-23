@@ -27,6 +27,12 @@ class DualImageView:
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.get_tk_widget().pack(padx=0, pady=0, expand=1, fill='both')
         
+        # cursor
+        self.cursor_h = self.ax.axhline(y=[0], visible=True, color='gray', alpha=0.5)
+        self.cursor_v = self.ax.axvline(x=[0], visible=True, color='gray', alpha=0.5)
+        self.cursor_h_sticky = self.ax.axhline(y=[0], visible=False, color='red', alpha=0.5)
+        self.cursor_v_sticky = self.ax.axvline(x=[0], visible=False, color='red', alpha=0.5)
+        
         self.update_data()
         
     

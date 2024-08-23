@@ -22,13 +22,19 @@ class ImageView:
         
         self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap=self.cmap, interpolation='none')
         
-        # Color Bar
+        # color bar
         divider_PET = make_axes_locatable(self.ax)
         cb_cax = divider_PET.append_axes("right", size="5%", pad=0.05)
         self.cbar = self.fig.colorbar(self.image, cax=cb_cax)
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.get_tk_widget().pack(padx=0, pady=0, expand=1, fill='both')
+        
+        # cursor
+        self.cursor_h = self.ax.axhline(y=[0], visible=True, color='gray', alpha=0.5)
+        self.cursor_v = self.ax.axvline(x=[0], visible=True, color='gray', alpha=0.5)
+        self.cursor_h_sticky = self.ax.axhline(y=[0], visible=False, color='red', alpha=0.5)
+        self.cursor_v_sticky = self.ax.axvline(x=[0], visible=False, color='red', alpha=0.5)
     
     def set_slice(self, slice_indicator, mode):
         self.slice = self.X.get_slice(self.view, slice_indicator, mode)

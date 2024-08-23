@@ -7,9 +7,12 @@ from source.dualimagecontrols import DualImageControls
 from source.scannerpanel import ScannerPanel
 from source.imageviews import ImageData, ImageView
 from source.dualimageviews import DualImageData, DualImageView
+from source.multicursor import MultiCursor
 
 # TODO:
-# multicursors
+# continue work on multicursor
+# stride not as expected
+# only certain cursors should update on move
 
 class App(tk.Tk):
     
@@ -65,12 +68,14 @@ class App(tk.Tk):
         self.image_3_view_3 = DualImageView(self.panel_3.image_view_3, self.image_1_view_3, self.image_2_view_3)
         self.image_3_views = [self.image_3_view_1, self.image_3_view_2, self.image_3_view_3]
         
-        self.images_views = [self.image_1_views, self.image_2_views, self.image_3_views]
+        self.images_by_views = [self.image_1_views, self.image_2_views]
         
         # panel controls
         self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views)
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
         self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
+        
+        self.mc = MultiCursor(self.images_by_views)
 
         # run
         self.mainloop()
