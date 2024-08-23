@@ -11,7 +11,6 @@ from source.multicursor import MultiCursor
 
 # TODO:
 # continue work on multicursor
-# stride not as expected
 # only certain cursors should update on move
 
 class App(tk.Tk):
