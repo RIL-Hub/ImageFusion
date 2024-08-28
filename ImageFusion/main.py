@@ -11,7 +11,7 @@ from source.multicursor import MultiCursor
 
 # TODO:
 # continue work on multicursor
-# only certain cursors should update on move
+# update cursor when using sliders
 
 class App(tk.Tk):
     
@@ -74,7 +74,9 @@ class App(tk.Tk):
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
         self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
         
-        self.mc = MultiCursor(self.images_by_views)
+        self.controls = [self.panel_1_controls, self.panel_2_controls]
+        
+        self.multi_cursor = MultiCursor(self.images_by_views, self.controls)
 
         # run
         self.mainloop()

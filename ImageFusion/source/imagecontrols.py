@@ -101,7 +101,7 @@ class ImageControls:
         slider_label.pack(side='top')
         
         slider.set(0)
-        self.set_view_slice(view, 0.5, 'by_percent')
+        self.set_initial_view_slice(view, 0.5, 'by_percent')
         return slider
     
     def make_rangeslider(self, parent):
@@ -126,14 +126,26 @@ class ImageControls:
         
         return intensity_range_slider
     
-    def set_view_slice(self, view, slice_indicator, mode):
+    def set_view_slice(self, view, slice_indicator, mode, from_mc=False):
         if mode == 'by_number':
             slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
+        
+        if not from_mc:
+            v_mm = slice_number * self.panel_views[view].X.vxl_dims[view]
+            self.app.multi_cursor.set_crosshair(view, v_mm)
       
+    def set_initial_view_slice(self, view, slice_indicator, mode):
+        if mode == 'by_number':
+            slice_number = slice_indicator
+        if mode == 'by_percent':
+            slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
+        self.views_slice_index[view].set(slice_number)
+        self.panel_views[view].set_slice(slice_indicator, mode)
+        
     def set_linked_view_slice(self, view, slice_number=-1):
         if slice_number == -1:
             slice_number = self.views_slice_index[view].get()

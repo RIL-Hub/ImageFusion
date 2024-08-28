@@ -70,6 +70,7 @@ class ImageData:
         
         self.X = self.original_X.copy()
         self.max_intensity = np.amax(self.X)
+        self.slice_numbers = [0, 0, 0]
         
         self.print_info()
        
@@ -123,9 +124,13 @@ class ImageData:
             slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.floor(slice_indicator * (self.vxls_in_dim[view])-1)]))
-        if view == 0: return self.X[slice_number, :, :]
-        if view == 1: return self.X[:, slice_number, :]
-        if view == 2: return self.X[:, :, slice_number]
+        self.slice_numbers[view] = slice_number
+        if view == 0:
+            return self.X[slice_number, :, :]
+        if view == 1:
+            return self.X[:, slice_number, :]
+        if view == 2:
+            return self.X[:, :, slice_number]
     
     def pad_to_dims(self, target_dims):
         for i, (X_dim, T_dim) in enumerate(zip(self.dims, target_dims)):
