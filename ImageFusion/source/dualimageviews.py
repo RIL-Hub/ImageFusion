@@ -49,7 +49,7 @@ class DualImageView:
         self.image_2.set_alpha(self.opacity)
         
         # self.canvas.flush_events()
-        self.canvas.draw()
+        self.canvas.draw_idle()
 
 # class DualImageView:
 #     def __init__(self, parent, X_dual, view):

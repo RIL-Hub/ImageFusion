@@ -127,8 +127,8 @@ class ImageControls:
         return intensity_range_slider
     
     def set_view_slice(self, view, slice_indicator, mode, from_mc=False):
-        if mode == 'by_number':
-            slice_number = slice_indicator
+        # if mode == 'by_number':
+        slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
         self.views_slice_index[view].set(slice_number)
@@ -139,38 +139,32 @@ class ImageControls:
             self.app.multi_cursor.set_crosshair(view, v_mm)
       
     def set_initial_view_slice(self, view, slice_indicator, mode):
-        if mode == 'by_number':
-            slice_number = slice_indicator
+        # if mode == 'by_number':
+        slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
         
-    def set_linked_view_slice(self, view, slice_number=-1):
-        if slice_number == -1:
-            slice_number = self.views_slice_index[view].get()
+    def set_linked_view_slice(self, view, slice_number):
         slice_percent = slice_number / (self.panel_views[view].X.vxls_in_dim[view]-1)
         
         self.app.panel_1_controls.set_view_slice(view, slice_percent, 'by_percent')
         self.app.panel_2_controls.set_view_slice(view, slice_percent, 'by_percent')
         
         self.update_dual_view()
-        # self.app.panel_3_controls.set_view_slice(view, slice_percent, 'by_percent')
       
-    def set_intensity(self, ar_name, index, mode):
-        if (self.last_intensity_limits[0] != self.intensity_limits[0].get() or
-            self.last_intensity_limits[1] != self.intensity_limits[1].get()):
+    def set_intensity(self, ar_name, index, mode):            
+        self.intensity_UB_label['text'] = '{0:.2f}'.format(self.intensity_limits[1].get())
+        self.intensity_LB_label['text'] = '{0:.2f}'.format(self.intensity_limits[0].get())
+        
+        for panel_view in self.panel_views:
+            panel_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
             
-            self.intensity_UB_label['text'] = '{0:.2f}'.format(self.intensity_limits[1].get())
-            self.intensity_LB_label['text'] = '{0:.2f}'.format(self.intensity_limits[0].get())
-            
-            for panel_view in self.panel_views:
-                panel_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
-                
-            self.last_intensity_limits[0] = self.intensity_limits[0].get()
-            self.last_intensity_limits[1] = self.intensity_limits[1].get()
-            
-            self.update_dual_view()
+        self.last_intensity_limits[0] = self.intensity_limits[0].get()
+        self.last_intensity_limits[1] = self.intensity_limits[1].get()
+        
+        self.update_dual_view()
     
     def set_colormap(self, ar_name, index, mode):
         for panel_view in self.panel_views:

@@ -6,17 +6,19 @@ class MultiCursor:
     
     def __init__(self, images_by_views, controls):
         self.controls = controls
+        self.figs = []
         self.axs = []
         self.cursor_hs = []
         self.cursor_vs = []
         self.image_views = []
-        self.z_conv_factors = []
-        self.y_conv_factors = []
-        self.x_conv_factors = []
+        self.z_conv_factors = np.array([])
+        self.y_conv_factors = np.array([])
+        self.x_conv_factors = np.array([])
         
         for image_views in images_by_views:
             for view, image_view in enumerate(image_views):
                 
+                self.figs.append(image_view.fig)
                 self.axs.append(image_view.ax)
                 self.cursor_hs.append(image_view.cursor_h)
                 self.cursor_vs.append(image_view.cursor_v)
@@ -28,9 +30,9 @@ class MultiCursor:
                 y_cf = conv_factors[1]
                 z_cf = conv_factors[0]
                 
-                self.x_conv_factors.append(x_cf)
-                self.y_conv_factors.append(y_cf)
-                self.z_conv_factors.append(z_cf)
+                self.x_conv_factors = np.append(self.x_conv_factors, x_cf)
+                self.y_conv_factors = np.append(self.y_conv_factors, y_cf)
+                self.z_conv_factors = np.append(self.z_conv_factors, z_cf)
                 
                 image_view.fig.canvas.mpl_connect('motion_notify_event', self.on_move)
                 image_view.fig.canvas.mpl_connect('button_press_event', self.on_click)
@@ -81,26 +83,26 @@ class MultiCursor:
             self.update_slices(ind, x_mm, y_mm, z_mm)
     
     def update_crosshair(self, x_mm, y_mm, z_mm):
+        xs = x_mm / self.x_conv_factors
+        ys = y_mm / self.y_conv_factors
+        zs = z_mm / self.z_conv_factors
+        
         for ind, _ in enumerate(self.axs):
             view = ind%3
-            
-            x = x_mm / self.x_conv_factors[ind]
-            y = y_mm / self.y_conv_factors[ind]
-            z = z_mm / self.z_conv_factors[ind]
                         
             if view == 0:
-                self.cursor_hs[ind].set_ydata([y])
-                self.cursor_vs[ind].set_xdata([x])
+                self.cursor_hs[ind].set_ydata(ys[ind])
+                self.cursor_vs[ind].set_xdata(xs[ind])
                 
             elif view == 1:
-                self.cursor_hs[ind].set_ydata([z])
-                self.cursor_vs[ind].set_xdata([x])
+                self.cursor_hs[ind].set_ydata(zs[ind])
+                self.cursor_vs[ind].set_xdata(xs[ind])
                 
             else: # view == 2:
-                self.cursor_hs[ind].set_ydata([z])
-                self.cursor_vs[ind].set_xdata([y])
+                self.cursor_hs[ind].set_ydata(zs[ind])
+                self.cursor_vs[ind].set_xdata(ys[ind])
             
-            self.image_views[ind].canvas.draw()
+            self.image_views[ind].canvas.draw_idle()
     
     def update_slices(self, trigger_ind, x_mm, y_mm, z_mm):
         trigger_panel_ind = np.floor(trigger_ind/3).astype(int)
@@ -129,30 +131,29 @@ class MultiCursor:
             
             controller.update_dual_view()
     
-    def set_crosshair(self, trigger_view, v_mm):       
-        for ind, _ in enumerate(self.axs):
-            view = ind%3
-
-            if trigger_view == 0:
-                z = v_mm / self.z_conv_factors[ind]
-                if view == 1: 
-                    self.cursor_hs[ind].set_ydata([z])
-                if view == 2:
-                    self.cursor_hs[ind].set_ydata([z])
-            
-            if trigger_view == 1:
-                y = v_mm / self.y_conv_factors[ind]
+    def set_crosshair(self, trigger_view, v_mm):
+        if trigger_view == 0:
+            zs = v_mm / self.z_conv_factors
+            for ind, _ in enumerate(self.axs):
+                view = ind%3
+                if view == 1 or view == 2: 
+                    self.cursor_hs[ind].set_ydata(zs[ind])
+        
+        elif trigger_view == 1:
+            ys = v_mm / self.y_conv_factors
+            for ind, _ in enumerate(self.axs):
+                view = ind%3
                 if view == 0: 
-                    self.cursor_hs[ind].set_ydata([y])
-                if view == 2:
-                    self.cursor_vs[ind].set_xdata([y])
-            
-            if trigger_view == 2:
-                x = v_mm / self.x_conv_factors[ind]
-                if view == 0: 
-                    self.cursor_vs[ind].set_xdata([x])
-                if view == 1:
-                    self.cursor_vs[ind].set_xdata([x]) 
-            
-            
-            self.image_views[ind].canvas.draw()
+                    self.cursor_hs[ind].set_ydata(ys[ind])
+                elif view == 2:
+                    self.cursor_vs[ind].set_xdata(ys[ind])
+        
+        else: # trigger_view == 2:
+            xs = v_mm / self.x_conv_factors
+            for ind, _ in enumerate(self.axs):
+                view = ind%3
+                if view == 0 or view == 1: 
+                    self.cursor_vs[ind].set_xdata(xs[ind])
+        
+        for fig in self.figs:
+            fig.canvas.draw_idle()

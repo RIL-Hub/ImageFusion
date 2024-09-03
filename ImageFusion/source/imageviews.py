@@ -55,7 +55,7 @@ class ImageView:
         self.cbar.update_normal(self.image)
         
         # self.canvas.flush_events()
-        self.canvas.draw()
+        self.canvas.draw_idle()
 
 
 class ImageData:
@@ -120,16 +120,16 @@ class ImageData:
         self.set_dims()
     
     def get_slice(self, view, slice_indicator, mode):
-        if mode == 'by_number':
-            slice_number = slice_indicator
+        # if mode == 'by_number':
+        slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.floor(slice_indicator * (self.vxls_in_dim[view])-1)]))
         self.slice_numbers[view] = slice_number
         if view == 0:
             return self.X[slice_number, :, :]
-        if view == 1:
+        elif view == 1:
             return self.X[:, slice_number, :]
-        if view == 2:
+        else: # view == 2:
             return self.X[:, :, slice_number]
     
     def pad_to_dims(self, target_dims):
