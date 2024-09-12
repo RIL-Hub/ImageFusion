@@ -130,7 +130,8 @@ class ImageControls:
         # if mode == 'by_number':
         slice_number = slice_indicator
         if mode == 'by_percent':
-            slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
+            slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
+            print(slice_number)
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
         
@@ -142,7 +143,7 @@ class ImageControls:
         # if mode == 'by_number':
         slice_number = slice_indicator
         if mode == 'by_percent':
-            slice_number = int(np.max([0, np.floor(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view])-1)]))
+            slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
         

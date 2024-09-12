@@ -78,26 +78,24 @@ class MultiCursor:
             x, y, z = self.get_xyz_indices_from_event(event, ind)
             x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
             self.update_slices(ind, x_mm, y_mm, z_mm)
-            self.update_crosshair(x_mm, y_mm, z_mm)
-    
+
     def on_scroll(self, event):
         if event.inaxes in self.axs:
             ind = self.axs.index(event.inaxes)
             
             view = ind%3
-            xyz = self.image_views[ind].X.slice_numbers
-            
+            v = self.image_views[ind].X.slice_numbers.copy()[view]
+            print('---')
+            print(v)
             if event.button == 'up':
-                if xyz[view] < self.image_views[ind].X.vxls_in_dim[view]-1:            
-                    xyz[view] = xyz[view] + 1
+                if v < self.image_views[ind].X.vxls_in_dim[view]-1:            
+                    v = v - 1
             else: # event.button == 'down':
-                if xyz[view] > 0:            
-                    xyz[view] = xyz[view] - 1
-                    
-            [x, y, z] = xyz
-            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
-            print(x, y, z, event.button)
-            self.update_slices(ind, x_mm, y_mm, z_mm)
+                if v > 0:    
+                    v = v + 1
+            print(v)
+            panel_ind = np.floor(ind/3).astype(int)
+            self.controls[panel_ind].set_linked_view_slice(view, v)
                         
     def update_crosshair(self, x_mm, y_mm, z_mm):
         xs = x_mm / self.x_conv_factors
@@ -147,6 +145,8 @@ class MultiCursor:
                 controller.set_view_slice(view, x, 'by_number', True)
             
             controller.update_dual_view()
+            
+        self.update_crosshair(x_mm, y_mm, z_mm)
     
     def set_crosshair(self, trigger_view, v_mm):
         if trigger_view == 0:

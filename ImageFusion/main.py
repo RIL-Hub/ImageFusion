@@ -13,7 +13,7 @@ from source.multicursor import MultiCursor
 # update cursor with non-linked images
 # display cursor coordinates
 # click to store coordinates?
-# mayeb crosshair just shows image slices? seperate one for mouse?
+# maybe crosshair just shows image slices? seperate one for mouse?
 
 class App(tk.Tk):
     

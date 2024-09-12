@@ -16,7 +16,7 @@ class ImageView:
         
         self.view = view
         self.X = X
-        self.slice = self.X.get_slice(view, 0.5, 'by_percent')
+        self.slice = self.X.get_slice(view, 0.0, 'by_percent')
         self.intensity_limits = [0.0, self.X.max_intensity]
         self.cmap = 'gist_yarg'
         
@@ -123,7 +123,7 @@ class ImageData:
         # if mode == 'by_number':
         slice_number = slice_indicator
         if mode == 'by_percent':
-            slice_number = int(np.max([0, np.floor(slice_indicator * (self.vxls_in_dim[view])-1)]))
+            slice_number = int(np.max([0, np.round(slice_indicator * (self.vxls_in_dim[view]-1))]))
         self.slice_numbers[view] = slice_number
         if view == 0:
             return self.X[slice_number, :, :]
