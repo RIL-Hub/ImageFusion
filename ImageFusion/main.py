@@ -10,8 +10,10 @@ from source.dualimageviews import DualImageData, DualImageView
 from source.multicursor import MultiCursor
 
 # TODO:
-# continue work on multicursor
-# update cursor when using sliders
+# update cursor with non-linked images
+# display cursor coordinates
+# click to store coordinates?
+# mayeb crosshair just shows image slices? seperate one for mouse?
 
 class App(tk.Tk):
     
@@ -66,17 +68,20 @@ class App(tk.Tk):
         self.image_3_view_2 = DualImageView(self.panel_3.image_view_2, self.image_1_view_2, self.image_2_view_2)
         self.image_3_view_3 = DualImageView(self.panel_3.image_view_3, self.image_1_view_3, self.image_2_view_3)
         self.image_3_views = [self.image_3_view_1, self.image_3_view_2, self.image_3_view_3]
-        
         self.images_by_views = [self.image_1_views, self.image_2_views]
         
         # panel controls
         self.panel_1_controls = ImageControls(self.panel_1.image_controls, self, self.image_1_views)
         self.panel_2_controls = ImageControls(self.panel_2.image_controls, self, self.image_2_views)
         self.panel_3_controls = DualImageControls(self.panel_3.image_controls, self, self.image_3_views)
-        
         self.controls = [self.panel_1_controls, self.panel_2_controls]
         
         self.multi_cursor = MultiCursor(self.images_by_views, self.controls)
+        
+        # set initial slices
+        for controller in self.controls:
+            for view in range(3):
+                controller.set_view_slice(view, 0.5, 'by_percent')
 
         # run
         self.mainloop()

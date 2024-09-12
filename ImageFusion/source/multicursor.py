@@ -34,19 +34,18 @@ class MultiCursor:
                 self.y_conv_factors = np.append(self.y_conv_factors, y_cf)
                 self.z_conv_factors = np.append(self.z_conv_factors, z_cf)
                 
-                image_view.fig.canvas.mpl_connect('motion_notify_event', self.on_move)
+                # image_view.fig.canvas.mpl_connect('motion_notify_event', self.on_move)
                 image_view.fig.canvas.mpl_connect('button_press_event', self.on_click)
+                image_view.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
     
-    def get_xyz_mm_from_event(self, event, ind):
-        x, y, z = self.get_xyz_from_event(event, ind)
-        
+    def get_xyz_mm_from_xyz_indices(self, ind, x, y, z):        
         x_mm = x * self.x_conv_factors[ind]
         y_mm = y * self.y_conv_factors[ind]
         z_mm = z * self.z_conv_factors[ind]
         
         return x_mm, y_mm, z_mm
         
-    def get_xyz_from_event(self, event, ind):
+    def get_xyz_indices_from_event(self, event, ind):
         view = ind%3
         
         if view == 0:
@@ -68,20 +67,38 @@ class MultiCursor:
     
     def on_move(self, event):
         if event.inaxes in self.axs:
-            
             ind = self.axs.index(event.inaxes)
-            x_mm, y_mm, z_mm = self.get_xyz_mm_from_event(event, ind)
-            
+            x, y, z = self.get_xyz_indices_from_event(event, ind)
+            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
             self.update_crosshair(x_mm, y_mm, z_mm)
             
     def on_click(self, event):
         if event.button == 1 and event.inaxes in self.axs:
-            
             ind = self.axs.index(event.inaxes)
-            x_mm, y_mm, z_mm = self.get_xyz_mm_from_event(event, ind)
-            
+            x, y, z = self.get_xyz_indices_from_event(event, ind)
+            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
             self.update_slices(ind, x_mm, y_mm, z_mm)
+            self.update_crosshair(x_mm, y_mm, z_mm)
     
+    def on_scroll(self, event):
+        if event.inaxes in self.axs:
+            ind = self.axs.index(event.inaxes)
+            
+            view = ind%3
+            xyz = self.image_views[ind].X.slice_numbers
+            
+            if event.button == 'up':
+                if xyz[view] < self.image_views[ind].X.vxls_in_dim[view]-1:            
+                    xyz[view] = xyz[view] + 1
+            else: # event.button == 'down':
+                if xyz[view] > 0:            
+                    xyz[view] = xyz[view] - 1
+                    
+            [x, y, z] = xyz
+            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
+            print(x, y, z, event.button)
+            self.update_slices(ind, x_mm, y_mm, z_mm)
+                        
     def update_crosshair(self, x_mm, y_mm, z_mm):
         xs = x_mm / self.x_conv_factors
         ys = y_mm / self.y_conv_factors

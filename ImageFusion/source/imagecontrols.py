@@ -30,7 +30,7 @@ class ImageControls:
         self.last_intensity_limits = [0, 1]
         self.intensity_slider = self.make_rangeslider(intensity_controls)
         
-        options = [
+        color_options = [
             "gist_yarg",
             "gist_gray",
             "inferno",
@@ -40,9 +40,9 @@ class ImageControls:
         ]
         
         self.color_scheme = tk.StringVar()
-        self.color_scheme.set(options[0])
+        self.color_scheme.set(color_options[0])
         self.color_scheme.trace_add('write', self.set_colormap)
-        drop = tk.OptionMenu(intensity_controls , self.color_scheme, *options)
+        drop = tk.OptionMenu(intensity_controls , self.color_scheme, *color_options)
         drop.config(width=7, anchor='w')
         drop.pack(side='top')
         
@@ -101,7 +101,7 @@ class ImageControls:
         slider_label.pack(side='top')
         
         slider.set(0)
-        self.set_initial_view_slice(view, 0.5, 'by_percent')
+        self.set_initial_view_slice(view, 0.0, 'by_percent')
         return slider
     
     def make_rangeslider(self, parent):
@@ -175,3 +175,4 @@ class ImageControls:
     def update_dual_view(self):
         for panel_view in self.app.image_3_views:
             panel_view.update_data()
+            
