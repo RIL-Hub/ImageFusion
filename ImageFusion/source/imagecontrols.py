@@ -63,9 +63,9 @@ class ImageControls:
                 self.app.panel_2_controls.linked_images.set(1)
                 # self.app.panel_3_controls.linked_images.set(1)
                 
-                self.set_linked_view_slice(view=0) 
-                self.set_linked_view_slice(view=1) 
-                self.set_linked_view_slice(view=2)
+                self.set_linked_view_slice(view=0, slice_number=self.views_slice_index[0].get()) 
+                self.set_linked_view_slice(view=1, slice_number=self.views_slice_index[1].get()) 
+                self.set_linked_view_slice(view=2, slice_number=self.views_slice_index[2].get())
             else:
                 self.app.panel_1_controls.linked_images.set(0)
                 self.app.panel_2_controls.linked_images.set(0)
@@ -131,7 +131,6 @@ class ImageControls:
         slice_number = slice_indicator
         if mode == 'by_percent':
             slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
-            print(slice_number)
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
         

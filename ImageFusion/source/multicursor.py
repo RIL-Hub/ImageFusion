@@ -85,15 +85,12 @@ class MultiCursor:
             
             view = ind%3
             v = self.image_views[ind].X.slice_numbers.copy()[view]
-            print('---')
-            print(v)
             if event.button == 'up':
                 if v < self.image_views[ind].X.vxls_in_dim[view]-1:            
                     v = v - 1
             else: # event.button == 'down':
                 if v > 0:    
                     v = v + 1
-            print(v)
             panel_ind = np.floor(ind/3).astype(int)
             self.controls[panel_ind].set_linked_view_slice(view, v)
                         
@@ -122,6 +119,10 @@ class MultiCursor:
     def update_slices(self, trigger_ind, x_mm, y_mm, z_mm):
         trigger_panel_ind = np.floor(trigger_ind/3).astype(int)
         
+        xs = x_mm / self.x_conv_factors
+        ys = y_mm / self.y_conv_factors
+        zs = z_mm / self.z_conv_factors
+        
         for ind, _ in enumerate(self.axs):
             view = ind%3
             panel_ind = np.floor(ind/3).astype(int)
@@ -137,16 +138,22 @@ class MultiCursor:
                         
             if view == 0:
                 controller.set_view_slice(view, z, 'by_number', True)
+                self.cursor_hs[ind].set_ydata(ys[ind])
+                self.cursor_vs[ind].set_xdata(xs[ind])
                 
             elif view == 1:
                 controller.set_view_slice(view, y, 'by_number', True)
+                self.cursor_hs[ind].set_ydata(zs[ind])
+                self.cursor_vs[ind].set_xdata(xs[ind])
                 
             else: # view == 2:
                 controller.set_view_slice(view, x, 'by_number', True)
+                self.cursor_hs[ind].set_ydata(zs[ind])
+                self.cursor_vs[ind].set_xdata(ys[ind])
             
             controller.update_dual_view()
             
-        self.update_crosshair(x_mm, y_mm, z_mm)
+        # self.update_crosshair(x_mm, y_mm, z_mm)
     
     def set_crosshair(self, trigger_view, v_mm):
         if trigger_view == 0:

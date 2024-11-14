@@ -10,10 +10,8 @@ from source.dualimageviews import DualImageData, DualImageView
 from source.multicursor import MultiCursor
 
 # TODO:
-# update cursor with non-linked images
 # display cursor coordinates
-# click to store coordinates?
-# maybe crosshair just shows image slices? seperate one for mouse?
+# right-click to store coordinates
 
 class App(tk.Tk):
     
@@ -21,7 +19,7 @@ class App(tk.Tk):
         # main setup
         super().__init__()
         self.title(title)
-        self.geometry("1600x1000")
+        self.geometry("1920x1080")
         self.minsize(800,400)
         
         # debug init
