@@ -42,9 +42,18 @@ class MultiCursor:
         x_mm = x * self.x_conv_factors[ind]
         y_mm = y * self.y_conv_factors[ind]
         z_mm = z * self.z_conv_factors[ind]
-        
         return x_mm, y_mm, z_mm
-        
+    
+    def get_xyz_indices_from_xyz_xx(self, ind, x_mm, y_mm, z_mm):        
+        x = np.floor(x_mm / self.x_conv_factors[ind]).astype(int)
+        y = np.floor(y_mm / self.y_conv_factors[ind]).astype(int)
+        z = np.floor(z_mm / self.z_conv_factors[ind]).astype(int)
+        return x, y, z
+    
+    def get_slice_indicator(self, view, xyz):
+        zyx = xyz[::-1]
+        return zyx[view]
+    
     def get_xyz_indices_from_event(self, event, ind):
         view = ind%3
         
@@ -65,24 +74,10 @@ class MultiCursor:
         
         return x, y, z
     
-    def on_move(self, event):
-        if event.inaxes in self.axs:
-            ind = self.axs.index(event.inaxes)
-            x, y, z = self.get_xyz_indices_from_event(event, ind)
-            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
-            self.update_crosshair(x_mm, y_mm, z_mm)
-            
-    def on_click(self, event):
-        if event.button == 1 and event.inaxes in self.axs:
-            ind = self.axs.index(event.inaxes)
-            x, y, z = self.get_xyz_indices_from_event(event, ind)
-            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
-            self.update_slices(ind, x_mm, y_mm, z_mm)
-
     def on_scroll(self, event):
         if event.inaxes in self.axs:
             ind = self.axs.index(event.inaxes)
-            
+            panel_ind = np.floor(ind/3).astype(int)
             view = ind%3
             v = self.image_views[ind].X.slice_numbers.copy()[view]
             if event.button == 'up':
@@ -91,93 +86,51 @@ class MultiCursor:
             else: # event.button == 'down':
                 if v > 0:    
                     v = v + 1
+            self.controls[panel_ind].set_view_slice(view=view, slice_indicator=v, mode='by_number', from_mc=True)
+            
+    def on_move(self, event):
+        ...
+            
+    def on_click(self, event):
+        if event.button == 1 and event.inaxes in self.axs:
+            ind = self.axs.index(event.inaxes)
+            x, y, z = self.get_xyz_indices_from_event(event, ind)
+            x_mm, y_mm, z_mm = self.get_xyz_mm_from_xyz_indices(ind, x, y, z)
+            self.update_panel_slices(ind, x_mm, y_mm, z_mm)
+            self.update_crosshairs()
+                      
+    def update_panel_slices(self, trigger_ind, x_mm, y_mm, z_mm):
+        trigger_panel_ind = np.floor(trigger_ind/3).astype(int)
+        for ind, _ in enumerate(self.axs):
             panel_ind = np.floor(ind/3).astype(int)
-            self.controls[panel_ind].set_linked_view_slice(view, v)
-                        
-    def update_crosshair(self, x_mm, y_mm, z_mm):
-        xs = x_mm / self.x_conv_factors
-        ys = y_mm / self.y_conv_factors
-        zs = z_mm / self.z_conv_factors
-        
+            if panel_ind == trigger_panel_ind:
+                x, y, z = self.get_xyz_indices_from_xyz_xx(ind, x_mm, y_mm, z_mm)
+                self.update_slice(ind, x, y, z)
+                
+    def update_slice(self, ind, x, y, z):
+        view = ind%3
+        panel_ind = np.floor(ind/3).astype(int)
+        slice_indicator = self.get_slice_indicator(view, (x, y, z))
+        self.controls[panel_ind].set_view_slice(view=view, slice_indicator=slice_indicator, mode='by_number', from_mc=True)
+                
+    def update_crosshairs(self):
         for ind, _ in enumerate(self.axs):
             view = ind%3
-                        
+            panel_ind = np.floor(ind/3).astype(int)
+            z = self.controls[panel_ind].views_slice_index[0].get()
+            y = self.controls[panel_ind].views_slice_index[1].get()
+            x = self.controls[panel_ind].views_slice_index[2].get()
+            
             if view == 0:
-                self.cursor_hs[ind].set_ydata(ys[ind])
-                self.cursor_vs[ind].set_xdata(xs[ind])
+                self.cursor_hs[ind].set_ydata(y)
+                self.cursor_vs[ind].set_xdata(x)
                 
             elif view == 1:
-                self.cursor_hs[ind].set_ydata(zs[ind])
-                self.cursor_vs[ind].set_xdata(xs[ind])
+                self.cursor_hs[ind].set_ydata(z)
+                self.cursor_vs[ind].set_xdata(x)
                 
             else: # view == 2:
-                self.cursor_hs[ind].set_ydata(zs[ind])
-                self.cursor_vs[ind].set_xdata(ys[ind])
+                self.cursor_hs[ind].set_ydata(z)
+                self.cursor_vs[ind].set_xdata(y)
             
             self.image_views[ind].canvas.draw_idle()
-    
-    def update_slices(self, trigger_ind, x_mm, y_mm, z_mm):
-        trigger_panel_ind = np.floor(trigger_ind/3).astype(int)
-        
-        xs = x_mm / self.x_conv_factors
-        ys = y_mm / self.y_conv_factors
-        zs = z_mm / self.z_conv_factors
-        
-        for ind, _ in enumerate(self.axs):
-            view = ind%3
-            panel_ind = np.floor(ind/3).astype(int)
-            controller = self.controls[panel_ind]
-            
-            if controller.linked_images.get() == 0:
-                if panel_ind != trigger_panel_ind:
-                    continue
-            
-            x = np.floor(x_mm / self.x_conv_factors[ind]).astype(int)
-            y = np.floor(y_mm / self.y_conv_factors[ind]).astype(int)
-            z = np.floor(z_mm / self.z_conv_factors[ind]).astype(int)
-                        
-            if view == 0:
-                controller.set_view_slice(view, z, 'by_number', True)
-                self.cursor_hs[ind].set_ydata(ys[ind])
-                self.cursor_vs[ind].set_xdata(xs[ind])
-                
-            elif view == 1:
-                controller.set_view_slice(view, y, 'by_number', True)
-                self.cursor_hs[ind].set_ydata(zs[ind])
-                self.cursor_vs[ind].set_xdata(xs[ind])
-                
-            else: # view == 2:
-                controller.set_view_slice(view, x, 'by_number', True)
-                self.cursor_hs[ind].set_ydata(zs[ind])
-                self.cursor_vs[ind].set_xdata(ys[ind])
-            
-            controller.update_dual_view()
-            
-        # self.update_crosshair(x_mm, y_mm, z_mm)
-    
-    def set_crosshair(self, trigger_view, v_mm):
-        if trigger_view == 0:
-            zs = v_mm / self.z_conv_factors
-            for ind, _ in enumerate(self.axs):
-                view = ind%3
-                if view == 1 or view == 2: 
-                    self.cursor_hs[ind].set_ydata(zs[ind])
-        
-        elif trigger_view == 1:
-            ys = v_mm / self.y_conv_factors
-            for ind, _ in enumerate(self.axs):
-                view = ind%3
-                if view == 0: 
-                    self.cursor_hs[ind].set_ydata(ys[ind])
-                elif view == 2:
-                    self.cursor_vs[ind].set_xdata(ys[ind])
-        
-        else: # trigger_view == 2:
-            xs = v_mm / self.x_conv_factors
-            for ind, _ in enumerate(self.axs):
-                view = ind%3
-                if view == 0 or view == 1: 
-                    self.cursor_vs[ind].set_xdata(xs[ind])
-        
-        for fig in self.figs:
-            fig.canvas.draw_idle()

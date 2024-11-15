@@ -61,15 +61,13 @@ class ImageControls:
             if self.linked_images.get() == 1:
                 self.app.panel_1_controls.linked_images.set(1)
                 self.app.panel_2_controls.linked_images.set(1)
-                # self.app.panel_3_controls.linked_images.set(1)
                 
-                self.set_linked_view_slice(view=0, slice_number=self.views_slice_index[0].get()) 
-                self.set_linked_view_slice(view=1, slice_number=self.views_slice_index[1].get()) 
-                self.set_linked_view_slice(view=2, slice_number=self.views_slice_index[2].get())
+                self.set_view_slice(view=0, slice_indicator=self.views_slice_index[0].get(), mode='by_number') 
+                self.set_view_slice(view=1, slice_indicator=self.views_slice_index[1].get(), mode='by_number') 
+                self.set_view_slice(view=2, slice_indicator=self.views_slice_index[2].get(), mode='by_number')
             else:
                 self.app.panel_1_controls.linked_images.set(0)
                 self.app.panel_2_controls.linked_images.set(0)
-                # self.app.panel_3_controls.linked_images.set(0)
         
         self.linked_images = tk.IntVar(value=1)
         self.linked_images_checkbutton = tk.Checkbutton(parent, text="Link Images", onvalue=1, offvalue=0,
@@ -79,11 +77,14 @@ class ImageControls:
     def make_slider(self, parent_frame, view, name):
         def slider_command(slider_value):
             slider_value = int(slider_value)
-            if self.linked_images.get() == 1:
-                self.set_linked_view_slice(view, slider_value)
-            else:
-                self.set_view_slice(view, slider_value, 'by_number')
-            
+            self.set_view_slice(view, slider_value, 'by_number')
+        
+        # def on_mouse_wheel(event):
+        #     if event.delta > 0:  # Scroll up
+        #         slider.set(scale.get() + 1)
+        #     else:  # Scroll down    
+        #         slider.set(scale.get() - 1)
+        
         slider_frame = tk.Frame(parent_frame)
         slider_frame.pack(side='left')
         
@@ -93,6 +94,7 @@ class ImageControls:
                           showvalue=False,
                           from_=0, to=upper_bound,
                           width=10, length=200, orient='vertical')
+        # slider.bind("<MouseWheel>", on_mouse_wheel)
         slider_showvalue = tk.Label(slider_frame, textvariable=self.views_slice_index[view])
         slider_label = tk.Label(slider_frame, text=name, width=3)
         
@@ -126,32 +128,37 @@ class ImageControls:
         
         return intensity_range_slider
     
-    def set_view_slice(self, view, slice_indicator, mode, from_mc=False):
-        # if mode == 'by_number':
-        slice_number = slice_indicator
-        if mode == 'by_percent':
-            slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
-        self.views_slice_index[view].set(slice_number)
-        self.panel_views[view].set_slice(slice_indicator, mode)
-        
-        if not from_mc:
-            v_mm = slice_number * self.panel_views[view].X.vxl_dims[view]
-            self.app.multi_cursor.set_crosshair(view, v_mm)
-      
     def set_initial_view_slice(self, view, slice_indicator, mode):
-        # if mode == 'by_number':
-        slice_number = slice_indicator
-        if mode == 'by_percent':
+        
+        if mode == 'by_number':
+            slice_number = slice_indicator
+        elif mode == 'by_percent':
             slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
+            
         self.views_slice_index[view].set(slice_number)
         self.panel_views[view].set_slice(slice_indicator, mode)
+    
+    def set_view_slice(self, view, slice_indicator, mode, from_mc=False, from_linked=False):
         
-    def set_linked_view_slice(self, view, slice_number):
-        slice_percent = slice_number / (self.panel_views[view].X.vxls_in_dim[view]-1)
+        if mode == 'by_number':
+            slice_number = slice_indicator
+        elif mode == 'by_percent':
+            slice_number = int(np.max([0, np.round(slice_indicator * (self.panel_views[view].X.vxls_in_dim[view]-1))]))
         
-        self.app.panel_1_controls.set_view_slice(view, slice_percent, 'by_percent')
-        self.app.panel_2_controls.set_view_slice(view, slice_percent, 'by_percent')
+        self.views_slice_index[view].set(slice_number)
+        self.panel_views[view].set_slice(slice_indicator, mode)
+        self.app.multi_cursor.update_crosshairs()
         
+        # if not from_mc:
+        #     v_mm = slice_number * self.panel_views[view].X.vxl_dims[view]
+        #     self.app.multi_cursor.set_crosshair(view, v_mm)
+            
+        if self.linked_images.get() == 1 and not from_linked:
+            slice_percent = slice_number / (self.panel_views[view].X.vxls_in_dim[view]-1)
+            
+            self.app.panel_1_controls.set_view_slice(view, slice_percent, 'by_percent', from_linked=True)
+            self.app.panel_2_controls.set_view_slice(view, slice_percent, 'by_percent', from_linked=True)
+            
         self.update_dual_view()
       
     def set_intensity(self, ar_name, index, mode):            
