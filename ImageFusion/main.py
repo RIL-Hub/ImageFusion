@@ -9,17 +9,13 @@ from source.imageviews import ImageData, ImageView
 from source.dualimageviews import DualImageData, DualImageView
 from source.multicursor import MultiCursor
 
-# TODO:
-# display cursor coordinates
-# right-click to store coordinates
-
 class App(tk.Tk):
     
     def __init__(self, title):
         # main setup
         super().__init__()
         self.title(title)
-        self.geometry("1920x1080")
+        self.geometry("1800x1200")
         self.minsize(800,400)
         
         # debug init
@@ -79,11 +75,11 @@ class App(tk.Tk):
         # set initial slices
         for controller in self.controls:
             for view in range(3):
-                controller.set_view_slice(view, 0.5, 'by_percent')
-
-        # run
-        self.mainloop()
+                controller.view_controls.set_view_slice(view, 0.5, 'by_percent')
         
+        # run
+        self.mainloop()    
+    
     def match_image_dims(self):
         self.max_dims = [np.max([dim1, dims2]) for (dim1, dims2) in zip(self.X_PET.dims, self.X_CT.dims)]
         self.X_PET.pad_to_dims(self.max_dims)

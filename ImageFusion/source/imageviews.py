@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator, FuncFormatter
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tifffile import imread
 import glob
@@ -21,6 +22,8 @@ class ImageView:
         self.cmap = 'gist_yarg'
         
         self.image = self.ax.imshow(self.slice, vmin=0, vmax=self.X.max_intensity, cmap=self.cmap, interpolation='none')
+        self.set_xaxis()
+        self.set_yaxis()
         
         # color bar
         divider_PET = make_axes_locatable(self.ax)
@@ -31,10 +34,81 @@ class ImageView:
         self.canvas.get_tk_widget().pack(padx=0, pady=0, expand=1, fill='both')
         
         # cursor
-        self.cursor_h = self.ax.axhline(y=[0], visible=True, color='gray', alpha=0.5)
-        self.cursor_v = self.ax.axvline(x=[0], visible=True, color='gray', alpha=0.5)
-        self.cursor_h_sticky = self.ax.axhline(y=[0], visible=False, color='red', alpha=0.5)
-        self.cursor_v_sticky = self.ax.axvline(x=[0], visible=False, color='red', alpha=0.5)
+        self.cursor_h = self.ax.axhline(y=[0], visible=True, color='black', alpha=0.5)
+        self.cursor_v = self.ax.axvline(x=[0], visible=True, color='black', alpha=0.5)
+    
+    def set_xaxis(self):
+        def get_divisors(n):
+            numbers = np.arange(1, n + 1) 
+            divisors = numbers[n % numbers == 0] 
+            count = len(divisors)
+            return count, divisors
+        
+        x_dims = [2, 2, 1]
+        x_dim = x_dims[self.view]
+        
+        dim_max = self.X.dims[x_dim]/2
+        
+        rounded_max = np.ceil(dim_max / 10) * 10
+        count, divisors = get_divisors(rounded_max)
+        
+        if count == 1:
+            tick_interval = divisors[0]
+        elif count >= 3:
+            tick_interval = divisors[count-3]
+        else:
+            tick_interval = divisors[count-2]
+        
+        positive_ticks = np.arange(0, rounded_max+1, tick_interval)
+        negative_ticks = -positive_ticks[::-1]
+        negative_ticks = negative_ticks[:-1]
+        new_ticks = np.concatenate((negative_ticks, positive_ticks)).astype(int)
+        
+        original_positions = (new_ticks + dim_max) / (dim_max + dim_max) * self.X.vxls_in_dim[2]
+        
+        self.ax.set_xticks(original_positions)
+        self.ax.set_xticklabels(new_ticks)
+        
+        x_labels = ['Sagittal (mm)', 'Sagittal (mm)', 'Coronal (mm)'] 
+        x_label = x_labels[self.view]
+        self.ax.set_xlabel(x_label)
+    
+    def set_yaxis(self):
+        def get_divisors(n):
+            numbers = np.arange(1, n + 1) 
+            divisors = numbers[n % numbers == 0] 
+            count = len(divisors)
+            return count, divisors
+        
+        y_dims = [1, 0, 0]
+        y_dim = y_dims[self.view]
+        
+        dim_max = self.X.dims[y_dim]/2
+        
+        rounded_max = np.ceil(dim_max / 10) * 10
+        count, divisors = get_divisors(rounded_max)
+        
+        if count == 1:
+            tick_interval = divisors[0]
+        elif count >= 3:
+            tick_interval = divisors[count-3]
+        else:
+            tick_interval = divisors[count-2]
+        
+        positive_ticks = np.arange(0, rounded_max+1, tick_interval)
+        negative_ticks = -positive_ticks[::-1]
+        negative_ticks = negative_ticks[:-1]
+        new_ticks = np.concatenate((negative_ticks, positive_ticks)).astype(int)
+        
+        original_positions = (new_ticks + dim_max) / (dim_max + dim_max) * self.X.vxls_in_dim[2]
+        titles = ['Transverse', 'Coronal', 'Sagittal']
+        self.ax.set_title(titles[self.view])
+        self.ax.set_yticks(original_positions)
+        self.ax.set_yticklabels(new_ticks[::-1])
+        
+        y_labels = ['Coronal (mm)', 'Transverse (mm)', 'Transverse (mm)'] 
+        y_label = y_labels[self.view]
+        self.ax.set_ylabel(y_label)
     
     def set_slice(self, slice_indicator, mode):
         self.slice = self.X.get_slice(self.view, slice_indicator, mode)

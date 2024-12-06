@@ -86,7 +86,7 @@ class MultiCursor:
             else: # event.button == 'down':
                 if v > 0:    
                     v = v + 1
-            self.controls[panel_ind].set_view_slice(view=view, slice_indicator=v, mode='by_number')
+            self.controls[panel_ind].view_controls.set_view_slice(view=view, slice_indicator=v, mode='by_number')
             
     def on_move(self, event):
         ...
@@ -111,15 +111,15 @@ class MultiCursor:
         view = ind%3
         panel_ind = np.floor(ind/3).astype(int)
         slice_indicator = self.get_slice_indicator(view, (x, y, z))
-        self.controls[panel_ind].set_view_slice(view=view, slice_indicator=slice_indicator, mode='by_number')
+        self.controls[panel_ind].view_controls.set_view_slice(view=view, slice_indicator=slice_indicator, mode='by_number')
                 
     def update_crosshairs(self):
         for ind, _ in enumerate(self.axs):
             view = ind%3
             panel_ind = np.floor(ind/3).astype(int)
-            z = self.controls[panel_ind].views_slice_index[0].get()
-            y = self.controls[panel_ind].views_slice_index[1].get()
-            x = self.controls[panel_ind].views_slice_index[2].get()
+            z = self.controls[panel_ind].view_controls.views_slice_index[0].get()
+            y = self.controls[panel_ind].view_controls.views_slice_index[1].get()
+            x = self.controls[panel_ind].view_controls.views_slice_index[2].get()
             
             if view == 0:
                 self.cursor_hs[ind].set_ydata(y)
