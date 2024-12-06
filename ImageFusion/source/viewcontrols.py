@@ -6,9 +6,9 @@ from matplotlib.pyplot import colormaps
 from scipy.ndimage import affine_transform
 
 class ViewControls:
-    def __init__(self, app, imagecontrols, parent_frame):
+    def __init__(self, app, image_controls, parent_frame):
         self.app = app
-        self.image_controls = imagecontrols
+        self.image_controls = image_controls
         self.parent_frame = parent_frame
         
         top_frame = tk.Frame(self.parent_frame)
