@@ -1,9 +1,6 @@
 import numpy as np
 import tkinter as tk
-from tkinter import ttk
 from RangeSlider.RangeSlider import RangeSliderV
-from matplotlib.pyplot import colormaps
-from scipy.ndimage import affine_transform
 
 class ViewControls:
     def __init__(self, app, image_controls, parent_frame):

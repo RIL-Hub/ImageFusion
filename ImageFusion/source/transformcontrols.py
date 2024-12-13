@@ -1,6 +1,5 @@
 import numpy as np
 import tkinter as tk
-from tkinter import ttk
 from scipy.ndimage import affine_transform
 
 class TransformControls:

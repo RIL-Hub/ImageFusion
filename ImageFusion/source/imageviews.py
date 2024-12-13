@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator, FuncFormatter
+from matplotlib import rcParams
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tifffile import imread
 import glob
 import pydicom as dicom
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+rcParams['figure.dpi'] = 100
 
 class ImageView:
     def __init__(self, parent, X, view):
