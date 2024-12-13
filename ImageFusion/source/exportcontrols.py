@@ -76,4 +76,31 @@ class ExportControls:
         return button
     
     def export(self):
-        ...
+        filename=self.export_view.get()
+        dpi = int(self.export_dpi.get())
+        extension = "." + self.export_filetype.get()
+        
+        filetype_dict = {
+            ".png": "PNG files",
+            ".jpg": "JPEG files",
+            ".svg": "SVG files",
+            ".eps": "EPS files",
+            ".*": "All files"
+        }
+        
+        # Build the filetypes list dynamically
+        filetypes = [(filetype_dict[extension], f"*{extension}")]
+        filetypes += [
+            (desc, f"*{ext}") for ext, desc in filetype_dict.items() if ext != extension
+        ]
+        
+        # Open file dialog for save location
+        file_path = tk.filedialog.asksaveasfilename(
+            defaultextension = extension,
+            filetypes=filetypes,
+            initialfile=filename
+        )
+        
+        if file_path:  # If the user didn't cancel
+            view_dict = {"Transverse": 0, "Sagittal": 1, "Coronal": 2}
+            self.image_controls.panel_views[view_dict[self.export_view.get()]].fig.savefig(file_path, dpi=dpi, bbox_inches='tight')

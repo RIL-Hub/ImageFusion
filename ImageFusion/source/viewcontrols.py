@@ -1,5 +1,6 @@
 import numpy as np
 import tkinter as tk
+from tkinter import ttk
 from RangeSlider.RangeSlider import RangeSliderV
 
 class ViewControls:
@@ -25,23 +26,24 @@ class ViewControls:
         slice_title = tk.Label(slice_sliders, text="Slice Controls")
         slice_title.pack(side='top', anchor='n')
         self.views_slice_index = [tk.IntVar(), tk.IntVar(), tk.IntVar()]
-        self.make_slider(slice_sliders, view=0, name='T')
-        self.make_slider(slice_sliders, view=1, name='C')
-        self.make_slider(slice_sliders, view=2, name='S')
+        self.make_slice_slider(slice_sliders, view=0, name='T')
+        self.make_slice_slider(slice_sliders, view=1, name='C')
+        self.make_slice_slider(slice_sliders, view=2, name='S')
         self.make_linked_images(slice_controls)
         
-        # --- Intensity Frame --- #
+        # --- Display Frame --- #
         
-        intensity_controls = tk.Frame(top_frame, bd=1, relief=tk.SUNKEN)
-        intensity_controls.pack(side='left', padx=5, pady=2)
+        display_controls = tk.Frame(top_frame, bd=1, relief=tk.SUNKEN)
+        display_controls.pack(side='left', padx=5, pady=2)
         
-        intensity_title = tk.Label(intensity_controls, text="Intensity")
-        intensity_title.pack(side='top', anchor='n')
+        display_title = tk.Label(display_controls, text="Display")
+        display_title.pack(side='top', anchor='n')
         
-        self.make_rangeslider(intensity_controls)
-        self.make_image_cmap_dropdown(intensity_controls)
+        self.make_intensity_slider(display_controls)
+        self.make_image_cmap_dropdown(display_controls)
+        self.make_interpolation_dropdown(display_controls)
         
-        # --- Cursor Frmae --- #
+        # --- Cursor Frame --- #
         
         cursor_controls = tk.Frame(bottom_frame, bd=1, relief=tk.SUNKEN)
         cursor_controls.pack(side='left', padx=5, pady=2)
@@ -58,8 +60,8 @@ class ViewControls:
         self.make_cursor_toggle(cursor_top_frame)
         self.make_cursor_color_dropdown(cursor_top_frame)
         self.make_cursor_alpha_slider(cursor_bottom_frame)
-        
-    def make_slider(self, parent_frame, view, name):
+       
+    def make_slice_slider(self, parent_frame, view, name):
         def slider_command(slider_value):
             slider_value = int(slider_value)
             self.set_view_slice(view, slider_value, 'by_number')
@@ -106,7 +108,7 @@ class ViewControls:
                                                         variable=self.linked_images, command=checkbutton_command)
         self.linked_images_checkbutton.pack(anchor='w', side=tk.LEFT)
     
-    def make_rangeslider(self, parent):
+    def make_intensity_slider(self, parent):
         self.intensity_limits = [tk.DoubleVar(value=0.0), tk.DoubleVar(value=1.0)]
         self.last_intensity_limits = [0, 1]
         
@@ -119,6 +121,7 @@ class ViewControls:
                                               min_val=0, max_val=1, step_size=0.01,
                                               line_s_color='gray50', line_color='#c8c8c8',
                                               bgColor='#f0f0f0')
+        
         intensity_range_slider.forceValues([0, 1])
         self.intensity_limits[0].trace_add('write', self.set_intensity)
         self.intensity_limits[1].trace_add('write', self.set_intensity)
@@ -130,7 +133,7 @@ class ViewControls:
         self.intensity_LB_label.pack(side='top')
         
         return intensity_range_slider
-    
+     
     def make_image_cmap_dropdown(self, parent):
         cmap_options = [
             "gist_yarg",
@@ -140,12 +143,37 @@ class ViewControls:
             "hot",
             "jet"
         ]
+        
         self.color_scheme = tk.StringVar()
         self.color_scheme.set(cmap_options[0])
         self.color_scheme.trace_add('write', self.set_colormap)
-        intensity_drop = tk.OptionMenu(parent , self.color_scheme, *cmap_options)
-        intensity_drop.config(width=7, anchor='w')
-        intensity_drop.pack(side='top')
+        
+        _ = tk.StringVar()
+        cmap_drop = ttk.OptionMenu(parent, _, "Color Map")
+        cmap_drop.pack(side='top', anchor='w')
+        cmap_drop.config(width=12)
+        menu = cmap_drop["menu"]
+        
+        for cmap in cmap_options:
+            menu.add_radiobutton(label=cmap, variable=self.color_scheme, value=cmap)      
+    
+    def make_interpolation_dropdown(self, parent):
+        interpolation_options = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
+           'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
+           'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
+        
+        self.interpolation = tk.StringVar()
+        self.interpolation.set(interpolation_options[0])
+        self.interpolation.trace_add('write', self.set_interpolation)
+
+        _ = tk.StringVar()
+        interpolation_drop = ttk.OptionMenu(parent, _, "Interpolation")
+        interpolation_drop.pack(side='top', anchor='w')
+        interpolation_drop.config(width=12)
+        menu = interpolation_drop["menu"]
+        
+        for interpolation in interpolation_options:
+            menu.add_radiobutton(label=interpolation, variable=self.interpolation, value=interpolation) 
     
     def make_cursor_toggle(self, parent):
         def checkbutton_command():
@@ -188,7 +216,7 @@ class ViewControls:
         cursor_drop = tk.OptionMenu(parent , self.cursor_color, *cursor_color_options.keys(), command = update_cursor_color)
         cursor_drop.config(width=7, anchor='w')
         cursor_drop.pack(side=tk.LEFT, anchor='n', pady=0, padx=0)
-     
+    
     def make_cursor_alpha_slider(self, parent):
         def update_cursor_alpha(event):
             for panel_view in self.image_controls.panel_views:
@@ -212,7 +240,8 @@ class ViewControls:
         
         slider_label.pack(side=tk.LEFT, anchor='w')
         slider.pack(side=tk.LEFT, anchor='w')
-        
+    
+
     def set_intensity(self, ar_name, index, mode):            
         self.intensity_UB_label['text'] = '{0:.2f}'.format(self.intensity_limits[1].get())
         self.intensity_LB_label['text'] = '{0:.2f}'.format(self.intensity_limits[0].get())
@@ -230,7 +259,13 @@ class ViewControls:
             panel_view.set_cmap(self.color_scheme.get())
             
         self.update_dual_view()
-        
+    
+    def set_interpolation(self, ar_name, index, mode):
+        for panel_view in self.image_controls.panel_views:
+            panel_view.set_interpolation(self.interpolation.get())
+            
+        self.update_dual_view()
+    
     def set_view_slice(self, view, slice_indicator, mode, from_self=False):
         
         if mode == 'by_number':
