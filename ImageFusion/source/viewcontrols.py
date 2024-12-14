@@ -2,6 +2,8 @@ import numpy as np
 import tkinter as tk
 from tkinter import ttk
 from RangeSlider.RangeSlider import RangeSliderV
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ViewControls:
     def __init__(self, app, image_controls, parent_frame):
@@ -18,7 +20,7 @@ class ViewControls:
         # --- Slice Frame --- #
         
         slice_controls = tk.Frame(top_frame, bd=1, relief=tk.SUNKEN)
-        slice_controls.pack(side='left', padx=5, pady=2)
+        slice_controls.pack(side='left', anchor='nw', padx=5, pady=5)
         
         slice_sliders = tk.Frame(slice_controls)
         slice_sliders.pack(side='top')
@@ -34,19 +36,19 @@ class ViewControls:
         # --- Display Frame --- #
         
         display_controls = tk.Frame(top_frame, bd=1, relief=tk.SUNKEN)
-        display_controls.pack(side='left', padx=5, pady=2)
+        display_controls.pack(side='left', anchor='nw', padx=5, pady=5)
         
-        display_title = tk.Label(display_controls, text="Display")
+        display_title = tk.Label(display_controls, text="Display Controls")
         display_title.pack(side='top', anchor='n')
         
-        self.make_intensity_slider(display_controls)
+        self.make_intensity_controller(display_controls)
         self.make_image_cmap_dropdown(display_controls)
         self.make_interpolation_dropdown(display_controls)
         
         # --- Cursor Frame --- #
         
         cursor_controls = tk.Frame(bottom_frame, bd=1, relief=tk.SUNKEN)
-        cursor_controls.pack(side='left', padx=5, pady=2)
+        cursor_controls.pack(side='left', padx=5, pady=5)
         
         cursor_title = tk.Label(cursor_controls, text="Cursor Controls")
         cursor_title.pack(side='top', anchor='n')
@@ -108,29 +110,77 @@ class ViewControls:
                                                         variable=self.linked_images, command=checkbutton_command)
         self.linked_images_checkbutton.pack(anchor='w', side=tk.LEFT)
     
-    def make_intensity_slider(self, parent):
+    def make_intensity_controller(self, parent):
+
+        # --- wrapper frame --- #
+
+        wrapper_frame = tk.Frame(parent)
+        wrapper_frame.pack(side='top', anchor='w')
+        
+        # -- (left) verticle label -- #
+        
+        label_canvas = tk.Canvas(wrapper_frame, width=20, height=60)
+        label_canvas.pack(side='left', anchor='w', padx=0, pady=0)
+        label_canvas.create_text(10, 30, text="Intesnity", angle=90)
+        
+        # -- (middle) range slider -- #
+        
+        slider_frame = tk.Frame(wrapper_frame)
+        slider_frame.pack(side='left', anchor='w', padx=0, pady=0)
+        
         self.intensity_limits = [tk.DoubleVar(value=0.0), tk.DoubleVar(value=1.0)]
-        self.last_intensity_limits = [0, 1]
         
         slider_handle = tk.PhotoImage(file='images/slider_handle_10px.png')
-        intensity_range_slider = RangeSliderV(parent, self.intensity_limits,
+        intensity_range_slider = RangeSliderV(slider_frame, self.intensity_limits,
                                               show_value=False,auto=False,
                                               imageU=slider_handle, image_anchorU='s',
                                               imageL=slider_handle, image_anchorL='n',
-                                              padY=3, Height=200, Width=50, line_width=10,
+                                              padY=3, font_size=-10, # negative font to trick min width requirements
+                                              Height=200, Width=10, line_width=10,
                                               min_val=0, max_val=1, step_size=0.01,
                                               line_s_color='gray50', line_color='#c8c8c8',
-                                              bgColor='#f0f0f0')
+                                              bgColor='#c8c8c8')
         
         intensity_range_slider.forceValues([0, 1])
         self.intensity_limits[0].trace_add('write', self.set_intensity)
         self.intensity_limits[1].trace_add('write', self.set_intensity)
 
-        self.intensity_UB_label = tk.Label(parent, text='1.00')
-        self.intensity_LB_label = tk.Label(parent, text='0.00')
+        self.intensity_UB_label = tk.Label(slider_frame, text='1.00')
+        self.intensity_LB_label = tk.Label(slider_frame, text='0.00')
+        
         self.intensity_UB_label.pack(side='top')
         intensity_range_slider.pack(side='top')
         self.intensity_LB_label.pack(side='top')
+        
+        # -- (right) histogram -- #
+        
+        image = self.image_controls.panel_views[0].X.get_matrix().flatten()
+        
+        px = 1/plt.rcParams['figure.dpi'] # pixel in inches
+        self.int_fig = plt.Figure(figsize=(50*px,200*px))
+        self.int_ax = self.int_fig.add_subplot()
+
+        self.int_ax.get_xaxis().set_ticks([])
+        self.int_ax.get_yaxis().set_ticks([])
+        self.int_ax.axis('off')
+        self.int_ax.set_xscale('log')
+        self.int_fig.tight_layout(pad=0)
+        
+        counts, bins, self.patches = self.int_ax.hist(image, bins=100, orientation='horizontal', color='black')
+        bin_centers = 0.5 * (bins[:-1] + bins[1:])
+        
+        # scale values to interval [0,1]
+        centered_bins = bin_centers - min(bin_centers)
+        self.scaled_bins = centered_bins/max(centered_bins)
+        
+        cm = plt.cm.get_cmap('gist_yarg')
+        for sb, p in zip(self.scaled_bins, self.patches):
+            plt.setp(p, 'facecolor', cm(sb))
+    
+        self.int_ax.set_ylim([0, bins[-1]])
+        
+        self.hist_canvas = FigureCanvasTkAgg(self.int_fig, master=wrapper_frame)
+        self.hist_canvas.get_tk_widget().pack(side='left', padx=0, pady=0)
         
         return intensity_range_slider
      
@@ -248,17 +298,33 @@ class ViewControls:
         
         for panel_view in self.image_controls.panel_views:
             panel_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
-            
-        self.last_intensity_limits[0] = self.intensity_limits[0].get()
-        self.last_intensity_limits[1] = self.intensity_limits[1].get()
         
+        self.set_intensity_colors()
         self.update_dual_view()
     
     def set_colormap(self, ar_name, index, mode):
         for panel_view in self.image_controls.panel_views:
             panel_view.set_cmap(self.color_scheme.get())
-            
+        self.set_intensity_colors()
         self.update_dual_view()
+    
+    def set_intensity_colors(self):
+        cm = plt.cm.get_cmap(self.color_scheme.get())
+        
+        local_scaled_bins = np.array(self.scaled_bins.copy())
+        local_scaled_bins[local_scaled_bins < self.intensity_limits[0].get()] = 0
+        local_scaled_bins[local_scaled_bins > self.intensity_limits[1].get()] = 1
+        
+        lo_ind = np.where(local_scaled_bins==0)[0][-1]
+        hi_ind = np.where(local_scaled_bins==1)[0][0]+1
+
+        local_scaled_bins[lo_ind:hi_ind] = np.linspace(0, 1, num=hi_ind-lo_ind)
+        
+        for sb, p in zip(local_scaled_bins, self.patches):
+            plt.setp(p, 'facecolor', cm(sb))
+            
+        self.int_fig.patch.set_facecolor(cm(0))
+        self.hist_canvas.draw()
     
     def set_interpolation(self, ar_name, index, mode):
         for panel_view in self.image_controls.panel_views:
@@ -284,7 +350,7 @@ class ViewControls:
             self.app.panel_2_controls.view_controls.set_view_slice(view, slice_percent, 'by_percent', from_self=True)
             
         self.update_dual_view()
-        
+    
     def update_dual_view(self):
         for panel_view in self.app.image_3_views:
             panel_view.update_data()

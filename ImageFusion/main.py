@@ -78,7 +78,7 @@ class App(tk.Tk):
                 controller.view_controls.set_view_slice(view, 0.5, 'by_percent')
         
         # run
-        self.mainloop()    
+        self.mainloop()
     
     def match_image_dims(self):
         self.max_dims = [np.max([dim1, dims2]) for (dim1, dims2) in zip(self.X_PET.dims, self.X_CT.dims)]

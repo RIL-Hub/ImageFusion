@@ -231,3 +231,6 @@ class ImageData:
     
     def set_dims(self):
         self.dims = np.multiply(self.vxl_dims, self.vxls_in_dim)
+    
+    def get_matrix(self):
+        return self.X
