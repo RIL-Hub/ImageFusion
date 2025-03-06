@@ -6,9 +6,9 @@ from matplotlib.pyplot import colormaps
 
 
 class DualImageControls:
-    def __init__(self, parent_frame, app, panel_views):
+    def __init__(self, parent_frame, app, image_views):
         self.app = app
-        self.panel_views = panel_views
+        self.image_views = image_views
         
         # view controls
         self.tab_view = ttk.Frame(parent_frame)
@@ -36,7 +36,7 @@ class DualImageControls:
         def slider_command(slider_value):
             slider_showvalue['text'] = '{0:.2f}'.format(self.opacity.get())
             self.update_dual_view()
-            
+
         slider_frame = tk.Frame(parent_frame)
         slider_frame.pack(side='left')
         
@@ -55,6 +55,7 @@ class DualImageControls:
         return slider
 
     def update_dual_view(self):
-        for panel_view in self.app.image_3_views:
-            panel_view.opacity = float(self.opacity.get())
-            panel_view.update_data()
+        for image_view in self.app.image_3_views:
+            image_view.opacity = float(self.opacity.get())
+            image_view.update_data()
+            image_view.draw()

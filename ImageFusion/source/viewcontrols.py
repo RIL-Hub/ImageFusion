@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ViewControls:
-    def __init__(self, app, image_controls, parent_frame):
+    
+    def __init__(self, app, image_views, image_data, parent_frame):
+    
         self.app = app
-        self.image_controls = image_controls
+        self.image_data = image_data
+        self.image_views = image_views
         self.parent_frame = parent_frame
         
         top_frame = tk.Frame(self.parent_frame)
@@ -62,8 +65,17 @@ class ViewControls:
         self.make_cursor_toggle(cursor_top_frame)
         self.make_cursor_color_dropdown(cursor_top_frame)
         self.make_cursor_alpha_slider(cursor_bottom_frame)
-       
+        
+        # --- Image Mouse Controls --- #
+        
+        for view, image_view in enumerate(self.image_views):
+            image_view.fig.canvas.mpl_connect('button_press_event', lambda event, view=view: self.on_click(event, view))
+            image_view.fig.canvas.mpl_connect('scroll_event', lambda event, view=view: self.on_scroll(event, view))
+        
+    # --- Functions for making objects --- #
+      
     def make_slice_slider(self, parent_frame, view, name):
+        
         def slider_command(slider_value):
             slider_value = int(slider_value)
             self.set_view_slice(view, slider_value, 'by_number')
@@ -75,11 +87,11 @@ class ViewControls:
         slider_frame = tk.Frame(parent_frame)
         slider_frame.pack(side='left')
         
-        upper_bound = self.image_controls.panel_views[view].X.vxls_in_dim[view]-1
+        upper_bound = self.image_data.vxls_per_view[view]-1
         slider = tk.Scale(slider_frame, variable=self.views_slice_index[view],
                           command=slider_command,
                           showvalue=False,
-                          from_=0, to=upper_bound,
+                          from_=upper_bound, to=0,
                           width=10, length=200, orient='vertical')
         slider.bind("<MouseWheel>", on_mouse_wheel)
         slider_showvalue = tk.Label(slider_frame, textvariable=self.views_slice_index[view])
@@ -105,7 +117,7 @@ class ViewControls:
                 self.app.panel_1_controls.view_controls.linked_images.set(0)
                 self.app.panel_2_controls.view_controls.linked_images.set(0)
         
-        self.linked_images = tk.IntVar(value=1)
+        self.linked_images = tk.IntVar(value=0)
         self.linked_images_checkbutton = tk.Checkbutton(parent, text="Link Images", onvalue=1, offvalue=0,
                                                         variable=self.linked_images, command=checkbutton_command)
         self.linked_images_checkbutton.pack(anchor='w', side=tk.LEFT)
@@ -154,7 +166,7 @@ class ViewControls:
         
         # -- (right) histogram -- #
         
-        image = self.image_controls.panel_views[0].X.get_matrix().flatten()
+        image = self.image_views[0].image_data.get_matrix().flatten()
         
         px = 1/plt.rcParams['figure.dpi'] # pixel in inches
         self.int_fig = plt.Figure(figsize=(50*px,200*px))
@@ -191,7 +203,8 @@ class ViewControls:
             "inferno",
             "viridis",
             "hot",
-            "jet"
+            "jet",
+            "Reds"
         ]
         
         self.color_scheme = tk.StringVar()
@@ -208,6 +221,7 @@ class ViewControls:
             menu.add_radiobutton(label=cmap, variable=self.color_scheme, value=cmap)      
     
     def make_interpolation_dropdown(self, parent):
+        
         interpolation_options = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16',
            'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
            'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
@@ -226,16 +240,21 @@ class ViewControls:
             menu.add_radiobutton(label=interpolation, variable=self.interpolation, value=interpolation) 
     
     def make_cursor_toggle(self, parent):
+        
         def checkbutton_command():
-            if self.cursor_toggle.get() == 1:
-                for panel_view in self.image_controls.panel_views:
-                    panel_view.cursor_h.set_visible(True)
-                    panel_view.cursor_v.set_visible(True)
-            else:
-                for panel_view in self.image_controls.panel_views:
-                    panel_view.cursor_h.set_visible(False)
-                    panel_view.cursor_v.set_visible(False)
             
+            if self.cursor_toggle.get() == 1:
+                for image_view in self.image_views:
+                    image_view.cursor_h.set_visible(True)
+                    image_view.cursor_v.set_visible(True)
+                    image_view.update_data()
+                    
+            else:
+                for image_view in self.image_views:
+                    image_view.cursor_h.set_visible(False)
+                    image_view.cursor_v.set_visible(False)
+                    image_view.update_data()
+                    
             self.app.refresh_graphics()
         
         self.cursor_toggle = tk.IntVar(value=1)
@@ -245,12 +264,15 @@ class ViewControls:
         self.cursor_checkbutton.pack(side=tk.LEFT, anchor='w')
     
     def make_cursor_color_dropdown(self, parent):
+        
         def update_cursor_color(event):
-            color = cursor_color_options[self.cursor_color.get()]
             
-            for panel_view in self.image_controls.panel_views:
-                panel_view.cursor_h.set_color(color)
-                panel_view.cursor_v.set_color(color)
+            color = cursor_color_options[self.cursor_color.get()]
+            for image_view in self.image_views:
+                image_view.cursor_h.set_color(color)
+                image_view.cursor_v.set_color(color)
+                image_view.update_data()
+                
             self.app.refresh_graphics()
         
         cursor_color_options = {
@@ -261,6 +283,7 @@ class ViewControls:
             'green': (0.0, 1.0, 0.0),
             'blue':  (0.0, 0.0, 1.0)
             }
+        
         self.cursor_color = tk.StringVar()
         self.cursor_color.set(list(cursor_color_options.keys())[0])
         cursor_drop = tk.OptionMenu(parent , self.cursor_color, *cursor_color_options.keys(), command = update_cursor_color)
@@ -268,17 +291,21 @@ class ViewControls:
         cursor_drop.pack(side=tk.LEFT, anchor='n', pady=0, padx=0)
     
     def make_cursor_alpha_slider(self, parent):
+        
         def update_cursor_alpha(event):
-            for panel_view in self.image_controls.panel_views:
-                panel_view.cursor_h.set_alpha(slider.get())
-                panel_view.cursor_v.set_alpha(slider.get())
+            
+            for image_view in self.image_views:
+                image_view.cursor_h.set_alpha(slider.get())
+                image_view.cursor_v.set_alpha(slider.get())
+            
+                image_view.update_data()
             self.app.refresh_graphics()
         
         def on_mouse_wheel(event):
             alpha = slider.get() + np.sign(event.delta) * slider_step
             slider.set(alpha)
         
-        slider_step = 0.1
+        slider_step = 0.01
         slider = tk.Scale(parent,
                           command=update_cursor_alpha,
                           showvalue=False,
@@ -291,22 +318,26 @@ class ViewControls:
         slider_label.pack(side=tk.LEFT, anchor='w')
         slider.pack(side=tk.LEFT, anchor='w')
     
+    # --- Functions for setting view parameters --- #
 
     def set_intensity(self, ar_name, index, mode):            
         self.intensity_UB_label['text'] = '{0:.2f}'.format(self.intensity_limits[1].get())
         self.intensity_LB_label['text'] = '{0:.2f}'.format(self.intensity_limits[0].get())
         
-        for panel_view in self.image_controls.panel_views:
-            panel_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
+        for image_view in self.image_views:
+            image_view.set_intensity([self.intensity_limits[0].get(), self.intensity_limits[1].get()])
         
         self.set_intensity_colors()
         self.update_dual_view()
+        self.app.refresh_graphics()
     
     def set_colormap(self, ar_name, index, mode):
-        for panel_view in self.image_controls.panel_views:
-            panel_view.set_cmap(self.color_scheme.get())
+        cmap = self.color_scheme.get()
+        for image_view in self.image_views:
+            image_view.set_cmap(cmap)
         self.set_intensity_colors()
         self.update_dual_view()
+        self.app.refresh_graphics()
     
     def set_intensity_colors(self):
         cm = plt.cm.get_cmap(self.color_scheme.get())
@@ -327,30 +358,106 @@ class ViewControls:
         self.hist_canvas.draw()
     
     def set_interpolation(self, ar_name, index, mode):
-        for panel_view in self.image_controls.panel_views:
-            panel_view.set_interpolation(self.interpolation.get())
+        for image_view in self.image_views:
+            image_view.set_interpolation(self.interpolation.get())
             
         self.update_dual_view()
+        self.app.refresh_graphics()
     
-    def set_view_slice(self, view, slice_indicator, mode, from_self=False):
+    # --- Slice controls --- #
+    
+    def set_view_slice(self, view, slice_indicator, mode, original_call=True):
         
         if mode == 'by_number':
             slice_number = slice_indicator
-        elif mode == 'by_percent':
-            slice_number = int(np.max([0, np.round(slice_indicator * (self.image_controls.panel_views[view].X.vxls_in_dim[view]-1))]))
+            slice_mm = self.image_data.get_mm_from_slice_number(view, slice_number)
+        else: # mode == 'by_mm':
+            slice_mm = slice_indicator
+            slice_number = self.image_data.get_slice_number_from_mm(view, slice_mm)
+            
+        if self.linked_images.get() == 1 and original_call:
+            self.app.panel_1_controls.view_controls.set_view_slice(view, slice_mm, 'by_mm', original_call=False)
+            self.app.panel_2_controls.view_controls.set_view_slice(view, slice_mm, 'by_mm', original_call=False)
+            original_call = True
+        else:            
+            self.image_views[view].slice = self.image_data.get_slice_from_mm(view, slice_mm)
+            self.image_data.set_slice_from_mm(view, slice_mm)
+            self.views_slice_index[view].set(slice_number)
         
-        self.views_slice_index[view].set(slice_number)
-        self.image_controls.panel_views[view].set_slice(slice_indicator, mode)
-        self.app.multi_cursor.update_crosshairs()
+        if original_call:
+            self.update_dual_view()
+            self.app.refresh_data()
+            self.app.refresh_graphics()
+    
+    def on_click(self, event, view):
+        
+        if event.button == 1 and event.xdata and event.ydata:
+
+            event_x = event.xdata
+            event_y = event.ydata
             
-        if self.linked_images.get() == 1 and not from_self:
-            slice_percent = slice_number / (self.image_controls.panel_views[view].X.vxls_in_dim[view]-1)
+            TRANVERSE = 0
+            CORONAL   = 1
+            SAGITTAL  = 2
+            mode = 'by_mm'
             
-            self.app.panel_1_controls.view_controls.set_view_slice(view, slice_percent, 'by_percent', from_self=True)
-            self.app.panel_2_controls.view_controls.set_view_slice(view, slice_percent, 'by_percent', from_self=True)
+            if view == TRANVERSE:
+                # clicked on transverse image, it doesn't change
+                # event_x is sagittal, event_y is coronal
+                self.set_view_slice(SAGITTAL, event_x, mode)
+                self.set_view_slice(CORONAL, event_y, mode)
             
-        self.update_dual_view()
+            elif view == CORONAL:
+                # clicked on coronal image, it doesn't change
+                # event_x is sagittal, event_y is transverse
+                self.set_view_slice(SAGITTAL, event_x, mode)
+                self.set_view_slice(TRANVERSE, event_y, mode)
+                
+            else: # view == SAGITTAL:
+                # clicked on sagittal image, it doesn't change
+                # event_x is coronal, event_y is transverse
+                self.set_view_slice(CORONAL, event_x, mode)
+                self.set_view_slice(TRANVERSE, event_y, mode)
+                
+    def on_scroll(self, event, view):
+        
+        v = self.views_slice_index[view].get()
+                
+        if event.button == 'up':
+            if v < self.image_views[0].image_data.vxls_per_view[view]-1:    
+                v = v + 1
+        else: # event.button == 'down':
+            if v > 0:            
+                v = v - 1
+                
+        self.set_view_slice(view, v, 'by_number')
+            
+    def update_crosshairs(self):
+        
+        TRANVERSE = 0
+        CORONAL   = 1
+        SAGITTAL  = 2
+        
+        for view in [0, 1, 2]:
+        
+            if view == 0: # transverse
+                # x is sagittal, y is coronal
+                x = self.image_data.slice_mm[SAGITTAL]
+                y = self.image_data.slice_mm[CORONAL]
+                
+            elif view == 1: # coronal
+                # x is sagittal, y is transverse
+                x = self.image_data.slice_mm[SAGITTAL]
+                y = self.image_data.slice_mm[TRANVERSE]
+            
+            else: # view == 2: # sagittal
+                # x is coronal, y is transverse
+                x = self.image_data.slice_mm[CORONAL]
+                y = self.image_data.slice_mm[TRANVERSE]
+
+            self.image_views[view].cursor_h.set_ydata(y)
+            self.image_views[view].cursor_v.set_xdata(x)
     
     def update_dual_view(self):
-        for panel_view in self.app.image_3_views:
-            panel_view.update_data()
+        for image_view in self.app.image_3_views:
+            image_view.update_data()

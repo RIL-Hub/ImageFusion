@@ -102,12 +102,13 @@ class DragDropMixIn:
             self.pack(after=drag_target)
 
 class ScannerPanel(DragDropMixIn, tk.Frame):
+    
     def __init__(self, parent):
+        
         # initialize parents
         tk.Frame.__init__(self, parent)
         DragDropMixIn.__init__(self)
         self.parent = parent
-        
         self.pack(side='top', padx=2.5, pady=2.5, expand=1, fill='both')
         
         # drag widget
@@ -120,11 +121,11 @@ class ScannerPanel(DragDropMixIn, tk.Frame):
         self.image_controls.pack(side='left', padx=2.5, pady=2.5, expand=False, fill='both')
 
         # image widgets
-        self.image_views = tk.Frame(self)
-        self.image_views.pack(side='left', padx=2.5, pady=2.5, expand=1, fill='both')
-        self.image_view_1 = tk.Frame(self.image_views, bg='blue')
-        self.image_view_2 = tk.Frame(self.image_views, bg='blue')
-        self.image_view_3 = tk.Frame(self.image_views, bg='blue')
+        self.image_views_frame = tk.Frame(self)
+        self.image_views_frame.pack(side='left', padx=2.5, pady=2.5, expand=1, fill='both')
+        self.image_view_1 = tk.Frame(self.image_views_frame, bg='blue')
+        self.image_view_2 = tk.Frame(self.image_views_frame, bg='blue')
+        self.image_view_3 = tk.Frame(self.image_views_frame, bg='blue')
         self.image_view_1.pack(padx=0, pady=0, side='left', expand=True, fill='both')
         self.image_view_2.pack(padx=0, pady=0, side='left', expand=True, fill='both')
         self.image_view_3.pack(padx=0, pady=0, side='left', expand=True, fill='both')
@@ -133,6 +134,7 @@ class ScannerPanel(DragDropMixIn, tk.Frame):
         self.set_neutral_colors()
 
     def set_neutral_colors(self):
+        
         self.config(bg="light gray")
         self.drag_zone.config(bg='light gray')
-        self.image_views.config(bg='red')
+        self.image_views_frame.config(bg='red')
