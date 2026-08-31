@@ -1,0 +1,16 @@
+# Scan data and conversion output - tens of GB, never committed
+data/
+out/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors
+.spyproject/
+.vscode/
+.idea/
+nul

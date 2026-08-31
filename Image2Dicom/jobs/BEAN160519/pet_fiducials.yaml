@@ -1,0 +1,42 @@
+# Image2Dicom conversion job
+# Generated from a probe of: ..\..\data\BEAN160519\PET\06102025_BEAN160519_No_glucose_Afternoon_PET_Recon_Fudcials\3PS_raw.E20..nCOT.RS.I25.Na22.RS.tif
+# Candidate: E20 I25 | 100 pages | 3PS_raw.E20..nCOT.RS.I25.Na22.RS.tif
+#
+# A commented-out override shows the value the source already declares.
+# An uncommented one marked REQUIRED is a placeholder you must replace.
+
+input:
+  path: "../../../../data/BEAN160519/PET/06102025_BEAN160519_No_glucose_Afternoon_PET_Recon_Fudcials/3PS_raw.E20..nCOT.RS.I25.Na22.RS.tif"
+
+output:
+  directory: "../../out/pet_fiducials"
+  patient_name: "Specimen"
+  patient_id: "UNKNOWN"
+  # Place the volume centre at (0, 0, 0). Set false to keep the scanner's
+  # own position, which is what preserves a shared FrameOfReferenceUID.
+  center: true
+
+overrides:
+  # Uncomment to fill a gap or replace what the source declares.
+  # Every override is recorded; one that contradicts the source is refused
+  # unless options.accept_overrides is true.
+  spacing_mm: [0.5,0.5,0.5]   # z, y, x - REQUIRED, source has none
+  modality: "PT"   # REQUIRED, source has none. CT, PT, MR, NM
+  units: "kBq"   # REQUIRED, source declares none
+
+  # Calibration. On an integer source the stored voxels are still copied
+  # verbatim - supplying a mapping changes only how they are interpreted,
+  # so this stays lossless. Both values must be given together.
+  # rescale_slope: 1.0
+  # rescale_intercept: 0.0
+
+options:
+  # Acknowledges what probe reported about the source itself.
+  accept_warnings: true
+  # Set because probe reported:
+  #   missing-modality: TIFF carries no modality; it must be supplied.
+  #   unknown-units: TIFF declares no units; the physical meaning of these float values must be supplied.
+
+  # Authorises any override that REPLACES a value the source declares.
+  # Filling a gap the source left blank does not need this.
+  accept_overrides: false
